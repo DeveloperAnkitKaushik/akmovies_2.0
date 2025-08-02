@@ -3,7 +3,7 @@ const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 // Get API key from environment variables
 const getApiKey = () => {
-    return process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY;
+    return process.env.TMDB_API_KEY || process.env.NEXT_PRIVATE_TMDB_API_KEY;
 };
 
 // Filter function to remove low-quality content

@@ -196,7 +196,7 @@ const Navbar = () => {
                         {isAuthenticated && (
                             <Link href="/continue" className={styles.mobileNavLink} onClick={toggleMenu}>Continue</Link>
                         )}
-                        {isAuthenticated && user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
+                        {isAuthenticated && user?.email === process.env.NEXT_PRIVATE_ADMIN_EMAIL && (
                             <Link href="/admin" className={styles.mobileNavLink} onClick={toggleMenu}>Admin</Link>
                         )}
                         {isAuthenticated && (

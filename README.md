@@ -86,19 +86,19 @@ A modern, responsive web application for streaming movies and TV series online. 
 
    ```env
    # Firebase Configuration
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PRIVATE_FIREBASE_API_KEY=your_firebase_api_key
+   NEXT_PRIVATE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   NEXT_PRIVATE_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PRIVATE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   NEXT_PRIVATE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   NEXT_PRIVATE_FIREBASE_APP_ID=your_app_id
 
    # TMDB API
    TMDB_API_KEY=your_tmdb_api_key
-   NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key
+   NEXT_PRIVATE_TMDB_API_KEY=your_tmdb_api_key
 
    # Google Analytics (Optional)
-   NEXT_PUBLIC_GA_ID=your_ga_id
+   NEXT_PRIVATE_GA_ID=your_ga_id
    ```
 
 4. **Firebase Setup**
@@ -207,6 +207,7 @@ akmovies/
    ```
 
 2. **Firestore Rules**
+
    ```javascript
    rules_version = '2';
    service cloud.firestore {
