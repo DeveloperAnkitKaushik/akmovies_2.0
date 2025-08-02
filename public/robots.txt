@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://realakmovies.vercel.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Disallow admin pages
+Disallow: /admin
+
+# Allow all other pages
+Allow: /search
+Allow: /browse
+Allow: /continue
+Allow: /watch
+Allow: /terms 

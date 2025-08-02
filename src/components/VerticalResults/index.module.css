@@ -1,0 +1,263 @@
+.container {
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* Grid Layouts */
+.resultsGrid {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.grid2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.grid5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.grid6 {
+    grid-template-columns: repeat(6, 1fr);
+}
+
+.resultItem {
+    display: flex;
+    justify-content: center;
+}
+
+/* Loading States */
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+}
+
+.loadingSpinner {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid rgba(233, 69, 96, 0.3);
+    border-top: 3px solid #e94560;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.loadingText {
+    color: #9ca3af;
+    font-size: 1.1rem;
+}
+
+.loadingMoreContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    color: #9ca3af;
+}
+
+.loadingMoreSpinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid rgba(233, 69, 96, 0.3);
+    border-top: 2px solid #e94560;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty State */
+.emptyContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    padding: 2rem;
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.emptyText {
+    color: #9ca3af;
+    font-size: 1.1rem;
+    max-width: 400px;
+    line-height: 1.6;
+}
+
+/* Load More Button */
+.loadMoreContainer {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.loadMoreButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.loadMoreButton:hover:not(:disabled) {
+    background: #d63384;
+    transform: translateY(-1px);
+}
+
+.loadMoreButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.buttonSpinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .grid6 {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+
+    .grid5,
+    .grid6 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .title {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .grid4,
+    .grid5,
+    .grid6 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .resultsGrid {
+        gap: 1rem;
+    }
+
+    .title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .loadMoreButton {
+        padding: 0.625rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 640px) {
+
+    .grid3,
+    .grid4,
+    .grid5,
+    .grid6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .resultsGrid {
+        gap: 0.75rem;
+    }
+
+    .title {
+        font-size: 1.25rem;
+    }
+
+    .loadingContainer,
+    .emptyContainer {
+        min-height: 200px;
+    }
+
+    .emptyIcon {
+        font-size: 3rem;
+    }
+
+    .emptyText {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .grid2,
+    .grid3,
+    .grid4,
+    .grid5,
+    .grid6 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .resultsGrid {
+        gap: 1rem;
+    }
+
+    .title {
+        font-size: 1.125rem;
+    }
+
+    .loadMoreButton {
+        width: 100%;
+        justify-content: center;
+    }
+}

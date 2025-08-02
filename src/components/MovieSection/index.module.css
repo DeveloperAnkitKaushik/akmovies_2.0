@@ -1,0 +1,145 @@
+/* Movie Section Container */
+.section {
+    margin-bottom: 48px;
+}
+
+/* Section Title */
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Container for the scroll area */
+.container {
+    position: relative;
+    width: 100%;
+}
+
+/* Embla Carousel Styles */
+.embla {
+    overflow: hidden;
+    width: 100%;
+}
+
+.emblaContainer {
+    display: flex;
+    gap: 16px;
+    padding: 4px 0;
+}
+
+.emblaSlide {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+/* Navigation Buttons */
+.navButton {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.navButton:hover {
+    background: rgba(233, 69, 96, 0.3);
+    border-color: rgba(233, 69, 96, 0.5);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.prevButton {
+    left: -20px;
+}
+
+.nextButton {
+    right: -20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .title {
+        font-size: 22px;
+        margin-bottom: 18px;
+    }
+
+    .emblaContainer {
+        gap: 14px;
+    }
+
+    .navButton {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+
+    .prevButton {
+        left: -18px;
+    }
+
+    .nextButton {
+        right: -18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .section {
+        margin-bottom: 40px;
+    }
+
+    .title {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .emblaContainer {
+        gap: 12px;
+    }
+
+    .navButton {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+
+    .prevButton {
+        left: -16px;
+    }
+
+    .nextButton {
+        right: -16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        margin-bottom: 32px;
+    }
+
+    .title {
+        font-size: 18px;
+        margin-bottom: 14px;
+    }
+
+    .emblaContainer {
+        gap: 10px;
+    }
+
+    .navButton {
+        display: none;
+    }
+}

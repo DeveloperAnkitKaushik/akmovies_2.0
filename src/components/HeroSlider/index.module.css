@@ -1,0 +1,466 @@
+/* Hero Slider Container */
+.heroContainer {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: black;
+}
+
+/* Embla Carousel Styles */
+.embla {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.emblaContainer {
+    display: flex;
+    height: 100%;
+}
+
+.emblaSlide {
+    flex: 0 0 100%;
+    min-width: 0;
+    position: relative;
+    height: 100%;
+}
+
+/* Slide Background */
+.slideBackground {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: transform 0.6s ease;
+}
+
+.slideOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.95) 0%,
+            rgba(0, 0, 0, 0.4) 50%,
+            rgba(0, 0, 0, 0.2) 70%,
+            transparent 100%);
+}
+
+/* Top Overlay for Navbar Visibility */
+.slideTopOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.6) 0%,
+            rgba(0, 0, 0, 0.3) 50%,
+            transparent 100%);
+    z-index: 5;
+}
+
+.slideLeftOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right,
+            rgba(0, 0, 0, 0.6) 0%,
+            rgba(0, 0, 0, 0.3) 50%,
+            transparent 100%);
+    z-index: 5;
+}
+
+/* Slide Content */
+.slideContent {
+    position: relative;
+    z-index: 10;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+.contentWrapper {
+    max-width: 600px;
+    color: white;
+    animation: slideInLeft 0.8s ease-out;
+}
+
+/* Title */
+.title {
+    font-size: 3.2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    line-height: 1.1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    letter-spacing: -0.02em;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Meta Information */
+.metaInfo {
+    margin-bottom: 20px;
+}
+
+.metaRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.genreTag {
+    background: rgba(233, 69, 96, 0.2);
+    color: #e94560;
+    border: 1px solid rgba(233, 69, 96, 0.4);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.genreTag:hover {
+    background: rgba(233, 69, 96, 0.4);
+    border-color: rgba(233, 69, 96, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+}
+
+.metaItem {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 10px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ratingItem {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.star {
+    font-size: 12px;
+}
+
+.ageRating {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.mediaType {
+    background: rgba(142, 68, 173, 0.2);
+    color: #8e44ad;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid rgba(142, 68, 173, 0.3);
+}
+
+/* Description */
+.description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 32px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Watch Button */
+.watchButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #e94560 0%, #c73650 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(233, 69, 96, 0.3);
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.watchButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(233, 69, 96, 0.4);
+    background: linear-gradient(135deg, #c73650 0%, #b12d47 100%);
+}
+
+.playIcon {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+}
+
+/* Navigation Buttons */
+.navButton {
+    position: absolute;
+    bottom: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 20;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.navButton:hover {
+    background: rgba(233, 69, 96, 0.3);
+    border-color: rgba(233, 69, 96, 0.5);
+    transform: scale(1.1);
+}
+
+.prevButton {
+    right: 80px;
+}
+
+.nextButton {
+    right: 20px;
+}
+
+/* Dots Indicator */
+.dotsContainer {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    display: flex;
+    gap: 12px;
+    z-index: 20;
+}
+
+.dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dot:hover {
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(1.2);
+}
+
+.activeDot {
+    background: #e94560;
+    transform: scale(1.3);
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: white;
+    font-size: 18px;
+    background: #1a1a2e;
+}
+
+/* Animations */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .contentWrapper {
+        max-width: 500px;
+    }
+
+    .title {
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        margin-bottom: 20px;
+    }
+
+    .description {
+        font-size: 14px;
+        margin-bottom: 28px;
+    }
+
+    .watchButton {
+        padding: 14px 28px;
+        font-size: 14px;
+    }
+
+    .navButton {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+    }
+
+    .prevButton {
+        right: 70px;
+    }
+
+    .nextButton {
+        right: 15px;
+    }
+
+    .slideContent {
+        padding: 0 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .contentWrapper {
+        max-width: 100%;
+    }
+
+    .title {
+        font-size: clamp(1.8rem, 6vw, 2.8rem);
+        margin-bottom: 16px;
+    }
+
+    .metaRow {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .genreTag,
+    .metaItem,
+    .ratingItem,
+    .ageRating,
+    .mediaType {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+
+    .description {
+        font-size: 13px;
+        margin-bottom: 24px;
+    }
+
+    .watchButton {
+        padding: 12px 24px;
+        font-size: 13px;
+        gap: 8px;
+    }
+
+    .playIcon {
+        font-size: 16px;
+    }
+
+    .navButton {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .prevButton {
+        right: 60px;
+    }
+
+    .nextButton {
+        right: 10px;
+    }
+
+    .dotsContainer {
+        bottom: 30px;
+        left: 30px;
+        gap: 8px;
+    }
+
+    .dot {
+        width: 10px;
+        height: 10px;
+    }
+
+    .slideContent {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .title {
+        font-size: clamp(1.5rem, 8vw, 2.2rem);
+        margin-bottom: 12px;
+    }
+
+    .metaInfo {
+        margin-bottom: 16px;
+    }
+
+    .description {
+        font-size: 12px;
+        margin-bottom: 20px;
+    }
+
+    .watchButton {
+        padding: 10px 20px;
+        font-size: 12px;
+    }
+
+    .navButton {
+        display: none;
+    }
+
+    .dotsContainer {
+        bottom: 20px;
+        left: 20px;
+    }
+
+    .slideContent {
+        padding: 0 16px;
+    }
+}

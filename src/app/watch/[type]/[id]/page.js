@@ -1,0 +1,487 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { FaPlay, FaChevronLeft, FaChevronRight, FaChevronDown } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import MovieCard from '@/components/MovieCard';
+import MovieSection from '@/components/MovieSection';
+import { getMovieDetails, getTVShowDetails, getImageUrl } from '@/utils/tmdb';
+import { addToHistory, getServers, getContinueWatchingItem, updateContinueWatchingProgress } from '@/utils/firestore';
+import styles from './page.module.css';
+import { IoIosPlayCircle } from "react-icons/io";
+import { IoPlayForward } from "react-icons/io5";
+import { IoPlayBack } from "react-icons/io5";
+import { FaCloudBolt } from "react-icons/fa6";
+
+export default function WatchPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { type, id } = params;
+  const { user, isAuthenticated } = useAuth();
+
+  // Extract the actual ID from the combined id-name parameter
+  const actualId = id ? id.split('-')[0] : null;
+
+  const [details, setDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedSeason, setSelectedSeason] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [selectedServer, setSelectedServer] = useState(1);
+  const [similarContent, setSimilarContent] = useState([]);
+  const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
+  const [servers, setServers] = useState([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Save to continue watching
+  const saveToHistory = async (contentDetails) => {
+    if (!isAuthenticated || !user?.uid || !contentDetails) return;
+
+    try {
+      const historyItem = {
+        id: parseInt(actualId),
+        title: contentDetails.title || contentDetails.name,
+        description: contentDetails.overview,
+        posterPath: contentDetails.poster_path,
+        mediaType: type,
+        season: type === 'tv' ? selectedSeason : 1,
+        episode: type === 'tv' ? selectedEpisode : 1
+      };
+
+      await addToHistory(user.uid, historyItem);
+    } catch (error) {
+      console.error('Error saving to history:', error);
+    }
+  };
+
+  // Fetch servers from Firebase
+  useEffect(() => {
+    const fetchServers = async () => {
+      try {
+        const serversData = await getServers();
+        setServers(serversData);
+        if (serversData.length > 0) {
+          setSelectedServer(serversData[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching servers:', error);
+        // Set default servers as fallback
+        const defaultServers = [
+          { id: '1', name: 'Server 1', url: 'https://vidsrc.cc/embed', order_number: 1 },
+          { id: '2', name: 'Server 2', url: 'https://vidsrc.to/embed', order_number: 2 },
+          { id: '3', name: 'Server 3', url: 'https://vidsrc.me/embed', order_number: 3 }
+        ];
+        setServers(defaultServers);
+        setSelectedServer('1');
+      }
+    };
+
+    fetchServers();
+  }, []);
+
+  // Check for continue watching progress
+  useEffect(() => {
+    const checkContinueWatching = async () => {
+      if (!isAuthenticated || !user?.uid || !actualId || type !== 'tv') return;
+
+      try {
+        const continueItem = await getContinueWatchingItem(user.uid, parseInt(actualId), type);
+        if (continueItem && continueItem.season && continueItem.episode) {
+          setSelectedSeason(continueItem.season);
+          setSelectedEpisode(continueItem.episode);
+        }
+      } catch (error) {
+        console.error('Error checking continue watching:', error);
+      }
+    };
+
+    checkContinueWatching();
+  }, [isAuthenticated, user?.uid, actualId, type]);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        setLoading(true);
+        let data;
+
+        if (type === 'movie') {
+          data = await getMovieDetails(actualId);
+        } else if (type === 'tv') {
+          data = await getTVShowDetails(actualId);
+        }
+
+        setDetails(data);
+
+        // Fetch similar content
+        if (data?.similar?.results) {
+          setSimilarContent(data.similar.results.slice(0, 10));
+        }
+      } catch (error) {
+        console.error('Error fetching details:', error);
+        toast.error('Failed to load content details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (actualId && type) {
+      fetchDetails();
+    }
+  }, [actualId, type]);
+
+  // Navigation functions for TV series
+  const goToPreviousEpisode = async () => {
+    if (type !== 'tv' || !details?.seasons) return;
+
+    const currentSeason = details.seasons.find(s => s.season_number === selectedSeason);
+    const prevSeason = details.seasons.find(s => s.season_number === selectedSeason - 1);
+
+    let newSeason = selectedSeason;
+    let newEpisode = selectedEpisode;
+
+    if (selectedEpisode > 1) {
+      // Same season, previous episode
+      newEpisode = selectedEpisode - 1;
+    } else if (prevSeason) {
+      // Previous season, last episode
+      newSeason = selectedSeason - 1;
+      newEpisode = prevSeason.episode_count;
+    }
+
+    setSelectedSeason(newSeason);
+    setSelectedEpisode(newEpisode);
+
+    // Update continue watching progress
+    if (isAuthenticated && user?.uid && details) {
+      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, newSeason, newEpisode);
+      // Also save to history when navigating
+      saveToHistory(details);
+    }
+  };
+
+  const goToNextEpisode = async () => {
+    if (type !== 'tv' || !details?.seasons) return;
+
+    const currentSeason = details.seasons.find(s => s.season_number === selectedSeason);
+    const nextSeason = details.seasons.find(s => s.season_number === selectedSeason + 1);
+
+    let newSeason = selectedSeason;
+    let newEpisode = selectedEpisode;
+
+    if (selectedEpisode < currentSeason.episode_count) {
+      // Same season, next episode
+      newEpisode = selectedEpisode + 1;
+    } else if (nextSeason) {
+      // Next season, first episode
+      newSeason = selectedSeason + 1;
+      newEpisode = 1;
+    }
+
+    setSelectedSeason(newSeason);
+    setSelectedEpisode(newEpisode);
+
+    // Update continue watching progress
+    if (isAuthenticated && user?.uid && details) {
+      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, newSeason, newEpisode);
+      // Also save to history when navigating
+      saveToHistory(details);
+    }
+  };
+
+  // Check if navigation buttons should be disabled
+  const canGoPrevious = () => {
+    if (type !== 'tv' || !details?.seasons) return false;
+
+    const firstSeason = details.seasons.find(s => s.season_number > 0);
+    return !(selectedSeason === firstSeason?.season_number && selectedEpisode === 1);
+  };
+
+  const canGoNext = () => {
+    if (type !== 'tv' || !details?.seasons) return false;
+
+    const currentSeason = details.seasons.find(s => s.season_number === selectedSeason);
+    const lastSeason = details.seasons[details.seasons.length - 1];
+
+    return !(selectedSeason === lastSeason?.season_number && selectedEpisode === currentSeason?.episode_count);
+  };
+
+  // Get player URL based on selected server
+  const getPlayerUrl = () => {
+    const server = servers.find(s => s.id === selectedServer);
+    if (!server) return '';
+
+    if (type === 'movie') {
+      return `${server.url}/movie/${actualId}`;
+    } else {
+      return `${server.url}/tv/${actualId}/${selectedSeason}/${selectedEpisode}`;
+    }
+  };
+
+  // Handle play button click
+  const handlePlayClick = () => {
+    setIsPlaying(true);
+    // Save to continue watching when play button is clicked
+    if (isAuthenticated && user?.uid && details) {
+      saveToHistory(details);
+    }
+  };
+
+  // Format description (limit to 50 words)
+  const formatDescription = (text) => {
+    if (!text) return '';
+    const words = text.split(' ');
+    return words.slice(0, 50).join(' ') + (words.length > 50 ? '...' : '');
+  };
+
+  // Format runtime
+  const formatRuntime = (minutes) => {
+    if (!minutes) return '';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
+  // Get content rating
+  const getContentRating = () => {
+    if (type === 'movie') {
+      return details?.release_dates?.results?.find(r => r.iso_3166_1 === 'US')?.release_dates?.[0]?.certification || 'PG-13';
+    } else {
+      return details?.content_ratings?.results?.find(r => r.iso_3166_1 === 'US')?.rating || 'TV-14';
+    }
+  };
+
+  // Handle season selection
+  const handleSeasonSelect = async (seasonNumber) => {
+    setSelectedSeason(seasonNumber);
+    setSelectedEpisode(1);
+    setShowSeasonDropdown(false);
+
+    // Update continue watching progress
+    if (isAuthenticated && user?.uid) {
+      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, seasonNumber, 1);
+    }
+  };
+
+  // Handle episode selection
+  const handleEpisodeSelect = async (episodeNumber) => {
+    setSelectedEpisode(episodeNumber);
+
+    // Update continue watching progress
+    if (isAuthenticated && user?.uid) {
+      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, selectedSeason, episodeNumber);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingContent}>
+          <div className={styles.spinner}></div>
+          <p className={styles.loadingText}>Loading details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!details) {
+    return (
+      <div className={styles.errorContainer}>
+        <h1>Content not found</h1>
+        <a href="/">Go back home</a>
+      </div>
+    );
+  }
+
+  const title = details.title || details.name;
+  const releaseDate = details.release_date || details.first_air_date;
+  const runtime = details.runtime || (details.episode_run_time && details.episode_run_time[0]);
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.bgoverlay}>
+        <div className={styles.overlay}></div>
+        <div className={styles.backdrop} style={{ backgroundImage: `url(${getImageUrl(details.backdrop_path, 'original')})` }}></div>
+      </div>
+      <div className='main-container'>
+        <div className={styles.innercontainer}>
+          <div className={styles.infocontainer}>
+            <div className={styles.imagecontainer}>
+              <img src={getImageUrl(details.poster_path, 'w500')} alt={title} />
+            </div>
+            <div className={styles.infocontent}>
+              <div className={styles.title}>{title}</div>
+              <div className={styles.metadata}>
+                {details.vote_average > 0 && (
+                  <span className={styles.ratingItem}>
+                    <span className={styles.star}>★</span>
+                    {details.vote_average.toFixed(1)}
+                  </span>
+                )}
+                <div className={styles.ageRating}>
+                  {getContentRating()}
+                </div>
+                <div className={styles.releasedate}>
+                  {releaseDate ? new Date(releaseDate).getFullYear() : 'N/A'}
+                </div>
+                {runtime && (
+                  <div className={styles.releasedate}>
+                    {formatRuntime(runtime)}
+                  </div>
+                )}
+              </div>
+              <div className={styles.description}>
+                {formatDescription(details.overview)}
+              </div>
+              <div className={styles.genres}>
+                {details.genres?.slice(0, 5).map((genre) => (
+                  <a
+                    key={genre.id}
+                    href={`/browse?genre=${genre.id}&type=${type}`}
+                    className={styles.genreTag}
+                  >
+                    {genre.name}
+                  </a>
+                ))}
+              </div>
+              <div className={styles.maininfo}>
+                <div className={`${styles.maininfocolumn}`}>
+                  <div className={styles.label}>
+                    <span>Country:</span> {details.production_countries?.[0]?.name || 'United States'}
+                  </div>
+                  <div className={styles.label}>
+                    <span>Released Date:</span> {releaseDate ? new Date(releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+                  </div>
+                  <div className={styles.label}>
+                    <span>Production:</span> {details.production_companies?.[0]?.name || 'N/A'}
+                  </div>
+                </div>
+                <div className={`${styles.maininfocolumn}`}>
+                  <div className={styles.label}>
+                    <span>Directors:</span> {details.credits?.crew?.filter(c => c.job === 'Director').slice(0, 3).map(d => d.name).join(', ') || 'N/A'}
+                  </div>
+                  <div className={styles.label}>
+                    <span>Cast:</span> {details.credits?.cast?.slice(0, 3).map(a => a.name).join(', ') || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Server Selection */}
+          <div className={styles.warningtext}>Use Adblocker</div>
+
+          {/* Player Section */}
+          <div className={styles.playerSection}>
+            <div className={styles.optionsContainer}>
+              <button
+                className={`${styles.controlbtncontainer} ${!canGoPrevious() ? styles.disabled : ''}`}
+                onClick={goToPreviousEpisode}
+                disabled={!canGoPrevious()}
+              >
+                <IoPlayBack /> Previous
+              </button>
+
+              <button
+                className={`${styles.controlbtncontainer} ${!canGoNext() ? styles.disabled : ''}`}
+                onClick={goToNextEpisode}
+                disabled={!canGoNext()}
+              >
+                Next <IoPlayForward />
+              </button>
+            </div>
+
+            {!isPlaying ? (
+              <div className={styles.playerContainer} style={{ backgroundImage: `url(${getImageUrl(details.backdrop_path, 'original')})` }}>
+                <div className={styles.videoPlayBtn} onClick={handlePlayClick}>
+                  <IoIosPlayCircle className={styles.playIcon} />
+                </div>
+              </div>
+            ) : (
+              <div className={styles.playerContainer}>
+                <iframe
+                  src={getPlayerUrl()}
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  allowFullScreen
+                  allow="autoplay; fullscreen"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className={styles.serverpara}>If the current server is not working, please try switching to other servers.</div>
+          <div className={styles.serverButtons}>
+            {servers.map((server) => (
+              <button
+                key={server.id}
+                className={`${styles.serverButton} ${selectedServer === server.id ? styles.active : ''}`}
+                onClick={() => setSelectedServer(server.id)}
+              >
+                <FaCloudBolt /> {server.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Season and Episode Selection for TV Series */}
+          {type === 'tv' && details.seasons && (
+            <div className={styles.seasonEpisodeSection}>
+              <div className={styles.seasonDropdown}>
+                <div
+                  className={styles.seasonSelector}
+                  onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
+                >
+                  <span>Season {selectedSeason}</span>
+                  <FaChevronDown className={styles.dropdownIcon} />
+                </div>
+                {showSeasonDropdown && (
+                  <div className={styles.dropdownMenu}>
+                    {details.seasons
+                      .filter(season => season.season_number > 0)
+                      .map((season) => (
+                        <div
+                          key={season.season_number}
+                          className={`${styles.dropdownItem} ${selectedSeason === season.season_number ? styles.active : ''}`}
+                          onClick={() => handleSeasonSelect(season.season_number)}
+                        >
+                          Season {season.season_number}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.episodeGrid}>
+                {Array.from({ length: details.seasons.find(s => s.season_number === selectedSeason)?.episode_count || 0 }, (_, i) => i + 1).map((episodeNumber) => (
+                  <div
+                    key={episodeNumber}
+                    className={`${styles.episodeBox} ${selectedEpisode === episodeNumber ? styles.activeEpisode : ''}`}
+                    onClick={() => handleEpisodeSelect(episodeNumber)}
+                  >
+                    EP {episodeNumber}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Similar Content */}
+          {similarContent.length > 0 && (
+            <div className={styles.similarSection}>
+              <div className={styles.similarHeader}>
+                <div className={styles.similarTitleBar}></div>
+                <h3>You May Like</h3>
+              </div>
+              <MovieSection
+                title=""
+                items={similarContent}
+                type={type}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
