@@ -1,6 +1,6 @@
 // Admin validation utilities
 export const ADMIN_EMAILS = [
-    process.env.NEXT_PRIVATE_ADMIN_EMAIL,
+    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
     // Add more admin emails here if needed
 ];
 
