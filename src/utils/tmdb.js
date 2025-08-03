@@ -131,7 +131,58 @@ export const getMovieDetails = async (movieId) => {
 
 // Fetch TV show details
 export const getTVShowDetails = async (tvId) => {
-    return await tmdbFetch(`/tv/${tvId}`, { append_to_response: 'credits,videos,similar' });
+    return await tmdbFetch(`/tv/${tvId}`);
+};
+
+// Get movie images (including logos)
+export const getMovieImages = async (movieId) => {
+    return await tmdbFetch(`/movie/${movieId}/images`);
+};
+
+// Get TV show images (including logos)
+export const getTVShowImages = async (tvId) => {
+    return await tmdbFetch(`/tv/${tvId}/images`);
+};
+
+// Get the best logo for a movie or TV show
+export const getTitleLogo = async (mediaType, id) => {
+    try {
+        let images;
+        if (mediaType === 'movie') {
+            images = await getMovieImages(id);
+        } else if (mediaType === 'tv') {
+            images = await getTVShowImages(id);
+        } else {
+            return null;
+        }
+
+        // Look for logos first
+        if (images.logos && images.logos.length > 0) {
+            // Filter for English logos first
+            const englishLogos = images.logos.filter(logo =>
+                logo.iso_639_1 === 'en' || logo.iso_639_1 === 'en-US'
+            );
+
+            // If no English logos, try to find logos without language specification
+            const noLanguageLogos = images.logos.filter(logo =>
+                !logo.iso_639_1 || logo.iso_639_1 === ''
+            );
+
+            // Use English logos first, then no-language logos, then any logo
+            const preferredLogos = englishLogos.length > 0 ? englishLogos :
+                noLanguageLogos.length > 0 ? noLanguageLogos :
+                    images.logos;
+
+            // Sort by vote average and get the best one
+            const bestLogo = preferredLogos.sort((a, b) => b.vote_average - a.vote_average)[0];
+            return getImageUrl(bestLogo.file_path, 'original');
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error fetching title logo:', error);
+        return null;
+    }
 };
 
 // Search movies and TV shows

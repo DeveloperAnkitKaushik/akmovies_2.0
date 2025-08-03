@@ -250,6 +250,49 @@
     height: 0.875rem;
 }
 
+/* Show remove button on mobile devices */
+@media (max-width: 768px) {
+    .removeButton {
+        opacity: 1;
+        transform: scale(1);
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+
+    .removeButton svg {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+}
+
+/* Recommendation Indicator */
+.recommendationIndicator {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.card:hover .recommendationIndicator {
+    opacity: 1;
+}
+
+.recommendationDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #667eea;
+    margin-right: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+.recommendationText {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #667eea;
+}
+
 /* Responsive Design */
 @media (min-width: 640px) {
     .smallCard {

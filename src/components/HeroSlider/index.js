@@ -1,22 +1,38 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import { getImageUrl } from '@/utils/tmdb';
+import { getImageUrl, getTitleLogo } from '@/utils/tmdb';
 import styles from './index.module.css';
 
 const HeroSlider = ({ movies = [] }) => {
-    const [emblaRef, emblaApi] = useEmblaCarousel(
-        {
-            loop: true,
-            dragFree: false,
-            duration: 40
-        },
-        [Autoplay({ delay: 4000, stopOnInteraction: false })]
-    );
-
+    const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [titleLogos, setTitleLogos] = useState({});
+
+    // Fetch title logos for all movies
+    useEffect(() => {
+        const fetchTitleLogos = async () => {
+            const logos = {};
+            for (const movie of movies) {
+                try {
+                    const mediaType = movie.media_type || (movie.title ? 'movie' : 'tv');
+                    const logoUrl = await getTitleLogo(mediaType, movie.id);
+                    if (logoUrl) {
+                        logos[movie.id] = logoUrl;
+                    }
+                } catch (error) {
+                    console.error('Error fetching logo for movie:', movie.id, error);
+                }
+            }
+            setTitleLogos(logos);
+        };
+
+        if (movies.length > 0) {
+            fetchTitleLogos();
+        }
+    }, [movies]);
 
     const onSelect = useCallback(() => {
         if (!emblaApi) return;
@@ -123,6 +139,7 @@ const HeroSlider = ({ movies = [] }) => {
                     {movies.map((item, index) => {
                         const title = item.title || item.name;
                         const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+                        const logoUrl = titleLogos[item.id] || getImageUrl(item.backdrop_path, 'original');
 
                         return (
                             <div key={item.id} className={styles.emblaSlide}>
@@ -138,7 +155,18 @@ const HeroSlider = ({ movies = [] }) => {
 
                                     <div className={styles.slideContent}>
                                         <div className={styles.contentWrapper}>
-                                            <h1 className={styles.title}>{title}</h1>
+                                            {/* Title Logo or Text */}
+                                            {titleLogos[item.id] ? (
+                                                <div className={styles.titleLogoContainer}>
+                                                    <img
+                                                        src={titleLogos[item.id]}
+                                                        alt={title}
+                                                        className={styles.titleLogo}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <h1 className={styles.title}>{title}</h1>
+                                            )}
 
                                             <div className={styles.metaInfo}>
                                                 <div className={styles.metaRow}>

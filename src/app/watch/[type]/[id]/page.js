@@ -7,13 +7,14 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import MovieCard from '@/components/MovieCard';
 import MovieSection from '@/components/MovieSection';
-import { getMovieDetails, getTVShowDetails, getImageUrl } from '@/utils/tmdb';
-import { addToHistory, getServers, getContinueWatchingItem, updateContinueWatchingProgress } from '@/utils/firestore';
+import { getMovieDetails, getTVShowDetails, getImageUrl, getTitleLogo } from '@/utils/tmdb';
+import { addToHistory, getServers, getContinueWatchingItem, updateContinueWatchingProgress, addRecommendation } from '@/utils/firestore';
 import styles from './page.module.css';
 import { IoIosPlayCircle } from "react-icons/io";
 import { IoPlayForward } from "react-icons/io5";
 import { IoPlayBack } from "react-icons/io5";
 import { FaCloudBolt } from "react-icons/fa6";
+import { FaPlus, FaShare } from "react-icons/fa";
 
 export default function WatchPage() {
   const params = useParams();
@@ -33,6 +34,25 @@ export default function WatchPage() {
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const [servers, setServers] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [titleLogo, setTitleLogo] = useState(null);
+
+  // Fetch title logo
+  useEffect(() => {
+    const fetchTitleLogo = async () => {
+      if (!actualId || !type) return;
+
+      try {
+        const logoUrl = await getTitleLogo(type, parseInt(actualId));
+        if (logoUrl) {
+          setTitleLogo(logoUrl);
+        }
+      } catch (error) {
+        console.error('Error fetching title logo:', error);
+      }
+    };
+
+    fetchTitleLogo();
+  }, [actualId, type]);
 
   // Save to continue watching
   const saveToHistory = async (contentDetails) => {
@@ -281,8 +301,62 @@ export default function WatchPage() {
     setSelectedEpisode(episodeNumber);
 
     // Update continue watching progress
-    if (isAuthenticated && user?.uid) {
+    if (isAuthenticated && user?.uid && actualId) {
       await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, selectedSeason, episodeNumber);
+    }
+  };
+
+  // Handle add to recommendations (admin only)
+  const handleAddRecommendation = async () => {
+    if (!isAuthenticated || !user?.uid || !details) return;
+
+    // Check if user is admin
+    if (user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+      toast.error('Only admin can add recommendations');
+      return;
+    }
+
+    try {
+      const recommendationData = {
+        id: parseInt(actualId),
+        title: details.title || details.name,
+        description: details.overview,
+        posterPath: details.poster_path,
+        mediaType: type,
+        addedBy: user.email
+      };
+
+      await addRecommendation(recommendationData);
+    } catch (error) {
+      console.error('Error adding recommendation:', error);
+    }
+  };
+
+  // Handle share functionality
+  const handleShare = async () => {
+    const currentUrl = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: details?.title || details?.name || 'Check out this content',
+          text: `Watch ${details?.title || details?.name} on akmovies`,
+          url: currentUrl
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(currentUrl);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(currentUrl);
+        toast.success('Link copied to clipboard!');
+      } catch (clipboardError) {
+        toast.error('Failed to share');
+      }
     }
   };
 
@@ -323,7 +397,18 @@ export default function WatchPage() {
               <img src={getImageUrl(details.poster_path, 'w500')} alt={title} />
             </div>
             <div className={styles.infocontent}>
-              <div className={styles.title}>{title}</div>
+              {/* Title Logo or Text */}
+              {titleLogo ? (
+                <div className={styles.titleLogoContainer}>
+                  <img
+                    src={titleLogo}
+                    alt={title}
+                    className={styles.titleLogo}
+                  />
+                </div>
+              ) : (
+                <div className={styles.title}>{title}</div>
+              )}
               <div className={styles.metadata}>
                 {details.vote_average > 0 && (
                   <span className={styles.ratingItem}>
@@ -440,6 +525,26 @@ export default function WatchPage() {
               </button>
             ))}
           </div>
+
+          {/* Admin Actions */}
+          {isAuthenticated && (
+            <div className={styles.adminActions}>
+              <button
+                className={styles.adminButton}
+                onClick={handleAddRecommendation}
+                title="Add to recommendations (Admin only)"
+              >
+                <FaPlus /> Add
+              </button>
+              <button
+                className={styles.adminButton}
+                onClick={handleShare}
+                title="Share this content"
+              >
+                <FaShare /> Share
+              </button>
+            </div>
+          )}
 
           {/* Season and Episode Selection for TV Series */}
           {type === 'tv' && details.seasons && (

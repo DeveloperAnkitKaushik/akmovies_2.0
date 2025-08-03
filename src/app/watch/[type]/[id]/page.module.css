@@ -89,6 +89,22 @@
     margin-bottom: 10px;
 }
 
+/* Title Logo */
+.titleLogoContainer {
+    margin-bottom: 10px;
+    max-width: 400px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+}
+
+.titleLogo {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.7));
+}
+
 .metadata {
     display: flex;
     align-items: center;
@@ -382,7 +398,6 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .videoPlayBtn {
@@ -572,8 +587,15 @@
     }
 
     .title {
+        font-size: 1.8rem;
         text-align: center;
         line-height: 1.2;
+    }
+
+    .titleLogoContainer {
+        max-width: 250px;
+        height: 50px;
+        margin-bottom: 8px;
     }
 
     .imagecontainer {
@@ -663,11 +685,72 @@
 
 @media (max-width: 500px) {
     .serverButtons {
-        gap: 1rem;
+        flex-direction: column;
+        gap: 10px;
     }
 
     .serverButton {
-        font-size: 0.8rem;
-        padding: 5px 10px;
+        width: 100%;
+    }
+}
+
+/* Admin Actions */
+.adminActions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 0 20px;
+}
+
+.adminButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.adminButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.adminButton:active {
+    transform: translateY(0);
+}
+
+.adminButton svg {
+    font-size: 16px;
+}
+
+/* Responsive adjustments for admin actions */
+@media screen and (max-width: 768px) {
+    .adminActions {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .adminButton {
+        width: 200px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 500px) {
+    .adminButton {
+        width: 180px;
+        padding: 8px 16px;
+        font-size: 13px;
     }
 }

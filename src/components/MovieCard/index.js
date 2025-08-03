@@ -7,22 +7,23 @@ import styles from './index.module.css';
 const MovieCard = ({ item, isLarge = false, type = 'normal', onRemove }) => {
     // Handle different data structures
     const isContinueWatching = type === 'continue';
+    const isRecommendation = type === 'recommendations';
 
-    // For continue watching items, use the stored data structure
-    const title = isContinueWatching ? item.title : (item.title || item.name);
-    const releaseDate = isContinueWatching ? null : (item.release_date || item.first_air_date);
-    const mediaType = isContinueWatching ? item.mediaType : (item.media_type || (item.title ? 'movie' : 'tv'));
-    const posterPath = isContinueWatching ? item.posterPath : item.poster_path;
-    const voteAverage = isContinueWatching ? null : item.vote_average;
-    const itemId = isContinueWatching ? item.id : item.id;
+    // For continue watching and recommendation items, use the stored data structure
+    const title = (isContinueWatching || isRecommendation) ? item.title : (item.title || item.name);
+    const releaseDate = (isContinueWatching || isRecommendation) ? null : (item.release_date || item.first_air_date);
+    const mediaType = (isContinueWatching || isRecommendation) ? item.mediaType : (item.media_type || (item.title ? 'movie' : 'tv'));
+    const posterPath = (isContinueWatching || isRecommendation) ? item.posterPath : item.poster_path;
+    const voteAverage = (isContinueWatching || isRecommendation) ? null : item.vote_average;
+    const itemId = (isContinueWatching || isRecommendation) ? item.id : item.id;
 
     const formatTitle = (title) => {
         return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     };
 
     const getWatchUrl = (item) => {
-        const title = isContinueWatching ? item.title : (item.title || item.name);
-        const mediaType = isContinueWatching ? item.mediaType : (item.media_type || (item.title ? 'movie' : 'tv'));
+        const title = (isContinueWatching || isRecommendation) ? item.title : (item.title || item.name);
+        const mediaType = (isContinueWatching || isRecommendation) ? item.mediaType : (item.media_type || (item.title ? 'movie' : 'tv'));
         const formattedTitle = formatTitle(title);
         return `/watch/${mediaType}/${itemId}-${formattedTitle}`;
     };
@@ -47,6 +48,17 @@ const MovieCard = ({ item, isLarge = false, type = 'normal', onRemove }) => {
                             className={styles.removeButton}
                             onClick={handleRemove}
                             title="Remove from continue watching"
+                        >
+                            <FaTimes />
+                        </button>
+                    )}
+
+                    {/* Remove button for recommendation items */}
+                    {isRecommendation && onRemove && (
+                        <button
+                            className={styles.removeButton}
+                            onClick={handleRemove}
+                            title="Remove from recommendations"
                         >
                             <FaTimes />
                         </button>
@@ -83,8 +95,8 @@ const MovieCard = ({ item, isLarge = false, type = 'normal', onRemove }) => {
                             )}
                         </div>
 
-                        {/* Rating - Only show for normal items, not continue watching */}
-                        {!isContinueWatching && voteAverage > 0 && (
+                        {/* Rating - Only show for normal items, not continue watching or recommendations */}
+                        {!(isContinueWatching || isRecommendation) && voteAverage > 0 && (
                             <div className={styles.rating}>
                                 <svg className={styles.starIcon} fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -100,6 +112,14 @@ const MovieCard = ({ item, isLarge = false, type = 'normal', onRemove }) => {
                             <div className={styles.continueIndicator}>
                                 <div className={styles.continueDot}></div>
                                 <span className={styles.continueText}>Continue</span>
+                            </div>
+                        )}
+
+                        {/* Recommendation indicator */}
+                        {isRecommendation && (
+                            <div className={styles.recommendationIndicator}>
+                                <div className={styles.recommendationDot}></div>
+                                <span className={styles.recommendationText}>Recommended</span>
                             </div>
                         )}
                     </div>

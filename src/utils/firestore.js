@@ -44,36 +44,20 @@ export const addToHistory = async (userId, item) => {
     if (!userId || !item) return;
 
     try {
-        const historyRef = collection(db, 'users', userId, 'history');
-        const firebaseId = generateFirebaseId(item.mediaType, item.id);
-        const docRef = doc(db, 'users', userId, 'history', firebaseId);
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(item.mediaType, item.id);
+        const docRef = doc(db, 'users', userId, 'history', documentId);
 
-        // Check if document exists
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-            // Update existing item
-            await updateDoc(docRef, {
-                episode: item.episode || 1,
-                id: item.id, // TMDB ID
-                mediaType: item.mediaType,
-                posterPath: item.posterPath,
-                season: item.season || 1,
-                title: item.title,
-                timestamp: serverTimestamp()
-            });
-        } else {
-            // Add new item
-            await setDoc(docRef, {
-                episode: item.episode || 1,
-                id: item.id, // TMDB ID
-                mediaType: item.mediaType,
-                posterPath: item.posterPath,
-                season: item.season || 1,
-                title: item.title,
-                timestamp: serverTimestamp()
-            });
-        }
+        // Always use setDoc to either create or update the document
+        await setDoc(docRef, {
+            episode: item.episode || 1,
+            id: item.id, // TMDB ID
+            mediaType: item.mediaType,
+            posterPath: item.posterPath,
+            season: item.season || 1,
+            title: item.title,
+            timestamp: serverTimestamp()
+        });
     } catch (error) {
         console.error('Error adding to history:', error);
     }
@@ -99,18 +83,16 @@ export const updateHistoryProgress = async (userId, itemId, progress) => {
     }
 };
 
-export const removeFromHistory = async (userId, itemId) => {
-    if (!userId || !itemId) return;
+export const removeFromHistory = async (userId, itemId, mediaType) => {
+    if (!userId || !itemId || !mediaType) return;
 
     try {
-        const historyRef = collection(db, 'users', userId, 'history');
-        const q = query(historyRef, where('id', '==', itemId));
-        const querySnapshot = await getDocs(q);
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(mediaType, itemId);
+        const docRef = doc(db, 'users', userId, 'history', documentId);
 
-        if (!querySnapshot.empty) {
-            const docRef = doc(db, 'users', userId, 'history', querySnapshot.docs[0].id);
-            await deleteDoc(docRef);
-        }
+        // Delete the document directly using the proper ID
+        await deleteDoc(docRef);
     } catch (error) {
         console.error('Error removing from history:', error);
     }
@@ -218,20 +200,19 @@ export const getContinueWatchingItem = async (userId, contentId, mediaType) => {
     if (!userId || !contentId || !mediaType) return null;
 
     try {
-        const firebaseId = generateFirebaseId(mediaType, contentId);
-        const docRef = doc(db, 'users', userId, 'history', firebaseId);
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(mediaType, contentId);
+        const docRef = doc(db, 'users', userId, 'history', documentId);
 
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
-            return {
-                firebaseId: docSnap.id,
-                ...docSnap.data()
-            };
+            return docSnap.data();
         }
 
         return null;
     } catch (error) {
-        console.error('Error fetching continue watching item:', error);
+        console.error('Error getting continue watching item:', error);
         return null;
     }
 };
@@ -240,28 +221,88 @@ export const updateContinueWatchingProgress = async (userId, contentId, mediaTyp
     if (!userId || !contentId || !mediaType) return;
 
     try {
-        const firebaseId = generateFirebaseId(mediaType, contentId);
-        const docRef = doc(db, 'users', userId, 'history', firebaseId);
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(mediaType, contentId);
+        const docRef = doc(db, 'users', userId, 'history', documentId);
 
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
-            // Update existing document
+            // Update the existing document
             await updateDoc(docRef, {
-                season,
-                episode,
+                season: season || 1,
+                episode: episode || 1,
                 timestamp: serverTimestamp()
             });
         } else {
-            // Create new document
+            // Create a new document if it doesn't exist
+            // This should not happen in normal flow, but just in case
+            console.warn('Continue watching item not found, creating new one');
             await setDoc(docRef, {
-                episode,
                 id: contentId,
-                mediaType,
-                season,
+                mediaType: mediaType,
+                season: season || 1,
+                episode: episode || 1,
                 timestamp: serverTimestamp()
             });
         }
     } catch (error) {
         console.error('Error updating continue watching progress:', error);
+    }
+};
+
+// Admin recommendations functions
+export const getRecommendations = async () => {
+    try {
+        const recommendationsRef = collection(db, 'recommendations');
+        const q = query(recommendationsRef, orderBy('timestamp', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const recommendations = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            recommendations.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        return recommendations;
+    } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        return [];
+    }
+};
+
+export const addRecommendation = async (recommendationData) => {
+    try {
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(recommendationData.mediaType, recommendationData.id);
+        const docRef = doc(db, 'recommendations', documentId);
+
+        // Use setDoc to either create or update the recommendation
+        await setDoc(docRef, {
+            ...recommendationData,
+            timestamp: serverTimestamp()
+        });
+
+        toast.success('Recommendation added successfully');
+    } catch (error) {
+        console.error('Error adding recommendation:', error);
+        toast.error('Failed to add recommendation');
+    }
+};
+
+export const deleteRecommendation = async (recommendationId, mediaType) => {
+    try {
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(mediaType, recommendationId);
+        const recommendationRef = doc(db, 'recommendations', documentId);
+
+        await deleteDoc(recommendationRef);
+        toast.success('Recommendation deleted successfully');
+    } catch (error) {
+        console.error('Error deleting recommendation:', error);
+        toast.error('Failed to delete recommendation');
     }
 }; 

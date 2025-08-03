@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import MovieSection from '@/components/MovieSection';
 import HeroSlider from '@/components/HeroSlider';
 import { getTrending, getPopularMovies, getPopularTVShows, getTopRatedMovies } from '@/utils/tmdb';
-import { getUserHistory, removeFromHistory } from '@/utils/firestore';
+import { getUserHistory, removeFromHistory, getRecommendations, deleteRecommendation } from '@/utils/firestore';
 import { toast } from 'react-hot-toast';
 import styles from './page.module.css';
 
@@ -15,6 +15,7 @@ export default function Home() {
     const [popularMovies, setPopularMovies] = useState([]);
     const [popularTVShows, setPopularTVShows] = useState([]);
     const [continueWatching, setContinueWatching] = useState([]);
+    const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user, isAuthenticated } = useAuth();
 
@@ -34,10 +35,14 @@ export default function Home() {
                 // Get popular TV shows
                 const popularTVData = await getPopularTVShows(1);
 
+                // Get admin recommendations
+                const recommendationsData = await getRecommendations();
+
                 setTrendingDay(trendingDataDay.slice(0, 30));
                 setTrendingWeek(trendingDataWeek.slice(0, 30));
                 setPopularMovies(popularMoviesData.results.slice(0, 30));
                 setPopularTVShows(popularTVData.results.slice(0, 30));
+                setRecommendations(recommendationsData);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -85,6 +90,29 @@ export default function Home() {
         }
     };
 
+    // Handle remove from recommendations
+    const handleRemoveFromRecommendations = async (item) => {
+        if (!isAuthenticated || !user?.uid) return;
+
+        // Check if user is admin
+        if (user.email !== 'ankitkaushik6269@gmail.com') {
+            toast.error('Only admin can remove recommendations');
+            return;
+        }
+
+        try {
+            await deleteRecommendation(item.id, item.mediaType);
+
+            // Update local state
+            setRecommendations(prev => prev.filter(rec => rec.id !== item.id));
+
+            toast.success('Removed from recommendations');
+        } catch (error) {
+            console.error('Error removing from recommendations:', error);
+            toast.error('Failed to remove from recommendations');
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.loadingContainer}>
@@ -111,6 +139,15 @@ export default function Home() {
                             items={continueWatching}
                             type="continue"
                             onRemove={handleRemoveFromContinueWatching}
+                        />
+                    )}
+                    {/* Admin Recommendations Section */}
+                    {recommendations.length > 0 && (
+                        <MovieSection
+                            title="Admin's Recommendations"
+                            items={recommendations}
+                            type="recommendations"
+                            onRemove={handleRemoveFromRecommendations}
                         />
                     )}
                     <MovieSection title="Popular Movies" items={popularMovies} />
