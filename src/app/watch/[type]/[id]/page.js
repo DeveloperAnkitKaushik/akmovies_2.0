@@ -99,6 +99,14 @@ export default function WatchPage() {
     checkContinueWatching();
   }, [isAuthenticated, user?.uid, actualId, type]);
 
+  // Handle logout during playback
+  useEffect(() => {
+    if (!isAuthenticated && isPlaying) {
+      setIsPlaying(false);
+      toast.error('Please login to continue watching');
+    }
+  }, [isAuthenticated, isPlaying]);
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -220,6 +228,11 @@ export default function WatchPage() {
 
   // Handle play button click
   const handlePlayClick = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login first to watch this content');
+      return;
+    }
+
     setIsPlaying(true);
     // Save to continue watching when play button is clicked
     if (isAuthenticated && user?.uid && details) {
@@ -406,6 +419,10 @@ export default function WatchPage() {
                   frameBorder="0"
                   allowFullScreen
                   allow="autoplay; fullscreen"
+                  onError={() => {
+                    toast.error('Failed to load video. Please try another server.');
+                    setIsPlaying(false);
+                  }}
                 />
               </div>
             )}

@@ -100,7 +100,7 @@ export default function RootLayout({ children }) {
                 <meta name="theme-color" content="#e94560" />
                 <meta name="msapplication-TileColor" content="#e94560" />
 
-                {/* Simple Anti-Inspection Script 
+                {/* Simple Anti-Inspection Script */}
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
@@ -140,7 +140,6 @@ export default function RootLayout({ children }) {
                         `
                     }}
                 />
-                */}
 
                 {/* Structured Data for Rich Snippets */}
                 <script

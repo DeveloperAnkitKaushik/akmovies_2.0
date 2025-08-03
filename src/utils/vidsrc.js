@@ -1,10 +1,17 @@
-const VIDSRC_BASE_URL = 'https://vidsrc.cc';
+// Multiple Vidsrc domains for fallback
+const VIDSRC_DOMAINS = [
+    'https://vidsrc.cc',
+    'https://vidsrc.to',
+    'https://vidsrc.me',
+    'https://vidsrc.xyz'
+];
 
-// Generate movie embed URL
+// Generate movie embed URL with fallback support
 export const getMovieEmbedUrl = (tmdbId, options = {}) => {
-    const { version = 'v2', poster = true, autoPlay = false } = options;
+    const { version = 'v2', poster = true, autoPlay = false, domainIndex = 0 } = options;
+    const baseUrl = VIDSRC_DOMAINS[domainIndex] || VIDSRC_DOMAINS[0];
 
-    let url = `${VIDSRC_BASE_URL}/${version}/embed/movie/${tmdbId}`;
+    let url = `${baseUrl}/${version}/embed/movie/${tmdbId}`;
 
     const params = new URLSearchParams();
     if (!poster) params.append('poster', 'false');
@@ -14,11 +21,12 @@ export const getMovieEmbedUrl = (tmdbId, options = {}) => {
     return queryString ? `${url}?${queryString}` : url;
 };
 
-// Generate TV show embed URL (entire series)
+// Generate TV show embed URL (entire series) with fallback support
 export const getTVShowEmbedUrl = (tmdbId, options = {}) => {
-    const { version = 'v2', poster = true, autoPlay = false } = options;
+    const { version = 'v2', poster = true, autoPlay = false, domainIndex = 0 } = options;
+    const baseUrl = VIDSRC_DOMAINS[domainIndex] || VIDSRC_DOMAINS[0];
 
-    let url = `${VIDSRC_BASE_URL}/${version}/embed/tv/${tmdbId}`;
+    let url = `${baseUrl}/${version}/embed/tv/${tmdbId}`;
 
     const params = new URLSearchParams();
     if (!poster) params.append('poster', 'false');
@@ -28,11 +36,12 @@ export const getTVShowEmbedUrl = (tmdbId, options = {}) => {
     return queryString ? `${url}?${queryString}` : url;
 };
 
-// Generate TV show season embed URL
+// Generate TV show season embed URL with fallback support
 export const getTVSeasonEmbedUrl = (tmdbId, seasonNumber, options = {}) => {
-    const { version = 'v2', poster = true, autoPlay = false } = options;
+    const { version = 'v2', poster = true, autoPlay = false, domainIndex = 0 } = options;
+    const baseUrl = VIDSRC_DOMAINS[domainIndex] || VIDSRC_DOMAINS[0];
 
-    let url = `${VIDSRC_BASE_URL}/${version}/embed/tv/${tmdbId}/${seasonNumber}`;
+    let url = `${baseUrl}/${version}/embed/tv/${tmdbId}/${seasonNumber}`;
 
     const params = new URLSearchParams();
     if (!poster) params.append('poster', 'false');
@@ -42,11 +51,12 @@ export const getTVSeasonEmbedUrl = (tmdbId, seasonNumber, options = {}) => {
     return queryString ? `${url}?${queryString}` : url;
 };
 
-// Generate TV show episode embed URL
+// Generate TV show episode embed URL with fallback support
 export const getTVEpisodeEmbedUrl = (tmdbId, seasonNumber, episodeNumber, options = {}) => {
-    const { version = 'v2', poster = true, autoPlay = false } = options;
+    const { version = 'v2', poster = true, autoPlay = false, domainIndex = 0 } = options;
+    const baseUrl = VIDSRC_DOMAINS[domainIndex] || VIDSRC_DOMAINS[0];
 
-    let url = `${VIDSRC_BASE_URL}/${version}/embed/tv/${tmdbId}/${seasonNumber}/${episodeNumber}`;
+    let url = `${baseUrl}/${version}/embed/tv/${tmdbId}/${seasonNumber}/${episodeNumber}`;
 
     const params = new URLSearchParams();
     if (!poster) params.append('poster', 'false');
@@ -56,7 +66,7 @@ export const getTVEpisodeEmbedUrl = (tmdbId, seasonNumber, episodeNumber, option
     return queryString ? `${url}?${queryString}` : url;
 };
 
-// Get appropriate embed URL based on media type and details
+// Get appropriate embed URL based on media type and details with fallback support
 export const getEmbedUrl = (mediaType, tmdbId, seasonNumber = null, episodeNumber = null, options = {}) => {
     if (mediaType === 'movie') {
         return getMovieEmbedUrl(tmdbId, options);
@@ -72,6 +82,26 @@ export const getEmbedUrl = (mediaType, tmdbId, seasonNumber = null, episodeNumbe
     throw new Error('Invalid media type. Must be "movie" or "tv"');
 };
 
+// Test if a URL is accessible (for fallback logic)
+export const testUrlAccessibility = async (url) => {
+    try {
+        const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+        return true;
+    } catch (error) {
+        return false;
+    }
+};
+
+// Get fallback URL if primary fails
+export const getFallbackUrl = (mediaType, tmdbId, seasonNumber = null, episodeNumber = null, options = {}) => {
+    for (let i = 1; i < VIDSRC_DOMAINS.length; i++) {
+        const fallbackOptions = { ...options, domainIndex: i };
+        const url = getEmbedUrl(mediaType, tmdbId, seasonNumber, episodeNumber, fallbackOptions);
+        return url;
+    }
+    return null;
+};
+
 // Player event handler setup (for tracking user interactions)
 export const setupPlayerEvents = (iframe) => {
     if (!iframe) return;
@@ -79,7 +109,8 @@ export const setupPlayerEvents = (iframe) => {
     // Listen for player events from the iframe
     const handlePlayerEvent = (event) => {
         // Ensure the event is from vidsrc domain
-        if (event.origin !== 'https://vidsrc.cc') return;
+        const vidsrcDomains = VIDSRC_DOMAINS.map(domain => new URL(domain).origin);
+        if (!vidsrcDomains.includes(event.origin)) return;
 
         if (event.data && event.data.type === 'PLAYER_EVENT') {
             const { eventType, currentTime, duration, tmdbId, season, episode, mediaType } = event.data.data;
@@ -100,6 +131,9 @@ export const setupPlayerEvents = (iframe) => {
                 case 'complete':
                     console.log('Video completed', { tmdbId });
                     // Mark as watched in Firebase
+                    break;
+                case 'error':
+                    console.error('Player error:', event.data.data);
                     break;
                 default:
                     console.log('Unknown player event:', eventType);
@@ -128,12 +162,22 @@ export const extractTmdbId = (id) => {
     return id.toString();
 };
 
+// Validate TMDB ID format
+export const validateTmdbId = (id) => {
+    const numId = parseInt(id);
+    return !isNaN(numId) && numId > 0;
+};
+
 export default {
     getMovieEmbedUrl,
     getTVShowEmbedUrl,
     getTVSeasonEmbedUrl,
     getTVEpisodeEmbedUrl,
     getEmbedUrl,
+    getFallbackUrl,
+    testUrlAccessibility,
     setupPlayerEvents,
-    extractTmdbId
+    extractTmdbId,
+    validateTmdbId,
+    VIDSRC_DOMAINS
 }; 
