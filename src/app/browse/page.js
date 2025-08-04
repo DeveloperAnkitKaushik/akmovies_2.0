@@ -12,6 +12,9 @@ import {
     getMovieGenres,
     getMoviesByGenre,
     getPopularTVShows,
+    getTopRatedTVShows,
+    getOnTheAirTVShows,
+    getAiringTodayTVShows,
     getTVGenres,
     getTVShowsByGenre
 } from '@/utils/tmdb';
@@ -40,6 +43,9 @@ export default function BrowsePage() {
 
     const tvTabs = [
         { id: 'popular', label: 'Popular', fetch: getPopularTVShows },
+        { id: 'top_rated', label: 'Top Rated', fetch: getTopRatedTVShows },
+        { id: 'on_the_air', label: 'On The Air', fetch: getOnTheAirTVShows },
+        { id: 'airing_today', label: 'Airing Today', fetch: getAiringTodayTVShows },
     ];
 
     const currentTabs = mediaType === 'movie' ? movieTabs : tvTabs;
@@ -100,14 +106,36 @@ export default function BrowsePage() {
             let data;
 
             if (genre) {
+                // If genre is selected, filter by genre (this overrides category)
                 if (mediaType === 'movie') {
                     data = await getMoviesByGenre(genre, page);
                 } else {
                     data = await getTVShowsByGenre(genre, page);
                 }
-            } else {
+            } else if (tab) {
+                // If no genre but tab is selected, use the category
                 const tabData = currentTabs.find(t => t.id === tab);
-                data = await tabData.fetch(page);
+                if (tabData) {
+                    data = await tabData.fetch(page);
+                } else {
+                    // If the current tab doesn't exist in the new media type, use the first available tab
+                    const firstTab = currentTabs[0];
+                    if (firstTab) {
+                        setActiveTab(firstTab.id);
+                        data = await firstTab.fetch(page);
+                    } else {
+                        throw new Error('No tabs available for this media type');
+                    }
+                }
+            } else {
+                // Default to popular if nothing is selected
+                const firstTab = currentTabs[0];
+                if (firstTab) {
+                    setActiveTab(firstTab.id);
+                    data = await firstTab.fetch(page);
+                } else {
+                    throw new Error('No tabs available for this media type');
+                }
             }
 
             if (page === 1) {
@@ -126,25 +154,30 @@ export default function BrowsePage() {
     };
 
     useEffect(() => {
-        fetchContent(activeTab, selectedGenre);
+        // Only fetch content if we have a valid tab or genre selected
+        if (activeTab || selectedGenre) {
+            fetchContent(activeTab, selectedGenre);
+        } else {
+            // Set default tab if nothing is selected
+            setActiveTab('popular');
+        }
     }, [activeTab, selectedGenre, mediaType]);
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
-        setSelectedGenre(null);
+        // Don't clear selectedGenre - allow both category and genre to be selected
         setCurrentPage(1);
     };
 
     const handleGenreChange = (genreId) => {
         setSelectedGenre(genreId);
-        setActiveTab('');
+        // Don't clear activeTab - allow both category and genre to be selected
         setCurrentPage(1);
     };
 
     const handleMediaTypeChange = (type) => {
         setMediaType(type);
-        setActiveTab('popular');
-        setSelectedGenre(null);
+        // Don't reset activeTab and selectedGenre - let the useEffect handle it
         setCurrentPage(1);
     };
 
@@ -161,10 +194,19 @@ export default function BrowsePage() {
     };
 
     const getCurrentFilterLabel = () => {
-        if (selectedGenre) {
-            return getActiveGenreName();
+        const categoryLabel = currentTabs.find(t => t.id === activeTab)?.label || 'Popular';
+        const genreLabel = selectedGenre ? getActiveGenreName() : '';
+
+        if (selectedGenre && activeTab) {
+            // Both category and genre are selected
+            return `${categoryLabel} ${genreLabel}`;
+        } else if (selectedGenre) {
+            // Only genre is selected
+            return genreLabel;
+        } else {
+            // Only category is selected
+            return categoryLabel;
         }
-        return currentTabs.find(t => t.id === activeTab)?.label || 'Popular';
     };
 
     const getContentTypeLabel = () => {
@@ -172,10 +214,20 @@ export default function BrowsePage() {
     };
 
     const getSectionTitle = () => {
-        if (selectedGenre) {
-            return `${getActiveGenreName()} ${getContentTypeLabel()}`;
+        const categoryLabel = currentTabs.find(t => t.id === activeTab)?.label || 'Popular';
+        const genreLabel = selectedGenre ? getActiveGenreName() : '';
+        const contentTypeLabel = getContentTypeLabel();
+
+        if (selectedGenre && activeTab) {
+            // Both category and genre are selected
+            return `${categoryLabel} ${genreLabel} ${contentTypeLabel}`;
+        } else if (selectedGenre) {
+            // Only genre is selected
+            return `${genreLabel} ${contentTypeLabel}`;
+        } else {
+            // Only category is selected
+            return `${categoryLabel} ${contentTypeLabel}`;
         }
-        return `${currentTabs.find(t => t.id === activeTab)?.label || 'Popular'} ${getContentTypeLabel()}`;
     };
 
     return (
@@ -227,7 +279,7 @@ export default function BrowsePage() {
                                                 <button
                                                     key={tab.id}
                                                     onClick={() => handleTabChange(tab.id)}
-                                                    className={`${styles.filterOption} ${activeTab === tab.id && !selectedGenre ? styles.active : ''}`}
+                                                    className={`${styles.filterOption} ${activeTab === tab.id ? styles.active : ''}`}
                                                 >
                                                     {tab.label}
                                                 </button>

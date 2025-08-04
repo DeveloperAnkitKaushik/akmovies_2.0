@@ -102,9 +102,42 @@ export const getPopularMovies = async (page = 1) => {
     };
 };
 
-// Fetch popular TV shows
+// Get popular TV shows
 export const getPopularTVShows = async (page = 1) => {
+    const data = await tmdbFetch('/tv/popular', { page });
+    const filteredData = filterValidContent(data.results);
+    return {
+        results: ensureUniqueKeys(filteredData),
+        totalPages: data.total_pages,
+        page: data.page
+    };
+};
+
+// Get top rated TV shows
+export const getTopRatedTVShows = async (page = 1) => {
     const data = await tmdbFetch('/tv/top_rated', { page });
+    const filteredData = filterValidContent(data.results);
+    return {
+        results: ensureUniqueKeys(filteredData),
+        totalPages: data.total_pages,
+        page: data.page
+    };
+};
+
+// Get on the air TV shows
+export const getOnTheAirTVShows = async (page = 1) => {
+    const data = await tmdbFetch('/tv/on_the_air', { page });
+    const filteredData = filterValidContent(data.results);
+    return {
+        results: ensureUniqueKeys(filteredData),
+        totalPages: data.total_pages,
+        page: data.page
+    };
+};
+
+// Get airing today TV shows
+export const getAiringTodayTVShows = async (page = 1) => {
+    const data = await tmdbFetch('/tv/airing_today', { page });
     const filteredData = filterValidContent(data.results);
     return {
         results: ensureUniqueKeys(filteredData),
@@ -269,6 +302,9 @@ export default {
     getTrending,
     getPopularMovies,
     getPopularTVShows,
+    getTopRatedTVShows,
+    getOnTheAirTVShows,
+    getAiringTodayTVShows,
     getTopRatedMovies,
     getMovieDetails,
     getTVShowDetails,

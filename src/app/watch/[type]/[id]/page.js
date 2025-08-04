@@ -15,6 +15,7 @@ import { IoPlayForward } from "react-icons/io5";
 import { IoPlayBack } from "react-icons/io5";
 import { FaCloudBolt } from "react-icons/fa6";
 import { FaPlus, FaShare } from "react-icons/fa";
+import { isUserAdmin } from '@/utils/admin';
 
 export default function WatchPage() {
   const params = useParams();
@@ -311,7 +312,7 @@ export default function WatchPage() {
     if (!isAuthenticated || !user?.uid || !details) return;
 
     // Check if user is admin
-    if (user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+    if (!isUserAdmin(user)) {
       toast.error('Only admin can add recommendations');
       return;
     }
@@ -527,7 +528,7 @@ export default function WatchPage() {
           </div>
 
           {/* Admin Actions */}
-          {isAuthenticated && (
+          {isAuthenticated && isUserAdmin(user) && (
             <div className={styles.adminActions}>
               <button
                 className={styles.adminButton}

@@ -91,10 +91,6 @@
     transition: color 0.3s ease;
 }
 
-.link:hover {
-    color: #e94560;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
     .footerContent {

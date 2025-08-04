@@ -22,7 +22,7 @@ const Footer = () => {
 
         {/* Main description */}
         <div className={styles.description}>
-          Developed with 💖 by <a href="https://www.linkedin.com/in/ankitkaushik/" target="_blank" rel="noopener noreferrer">Ankit Kaushik</a>
+          Developed with 💖 by Ankit Kaushik
         </div>
 
         {/* Footer links and copyright */}
@@ -39,12 +39,8 @@ const Footer = () => {
 
           {/* Links */}
           <div className={styles.links}>
-            <a href="https://www.linkedin.com/in/ankitkaushik/" target='_blank' className={styles.link}>
-              Request
-            </a>
-            <a href="https://www.linkedin.com/in/ankitkaushik/" target='_blank' className={styles.link}>
-              Contact
-            </a>
+              <div className={styles.link}>Request</div>
+              <div className={styles.link}>Contact</div>
           </div>
         </div>
       </div>

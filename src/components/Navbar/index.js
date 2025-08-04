@@ -192,7 +192,6 @@ const Navbar = () => {
                     <div className={`${styles.mobileMenu} ${isMenuOpen ? styles.open : ''}`}>
                         <Link href="/" className={styles.mobileNavLink} onClick={toggleMenu}>Home</Link>
                         <Link href="/browse" className={styles.mobileNavLink} onClick={toggleMenu}>Browse</Link>
-                        <Link href="/search" className={styles.mobileNavLink} onClick={toggleMenu}>Search</Link>
                         {isAuthenticated && (
                             <Link href="/continue" className={styles.mobileNavLink} onClick={toggleMenu}>Continue</Link>
                         )}

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import MovieSection from '@/components/MovieSection';
 import HeroSlider from '@/components/HeroSlider';
-import { getTrending, getPopularMovies, getPopularTVShows, getTopRatedMovies } from '@/utils/tmdb';
+import MovieSection from '@/components/MovieSection';
+import { getTrending, getPopularMovies, getPopularTVShows } from '@/utils/tmdb';
 import { getUserHistory, removeFromHistory, getRecommendations, deleteRecommendation } from '@/utils/firestore';
+import { isUserAdmin } from '@/utils/admin';
 import { toast } from 'react-hot-toast';
 import styles from './page.module.css';
 
@@ -95,7 +96,7 @@ export default function Home() {
         if (!isAuthenticated || !user?.uid) return;
 
         // Check if user is admin
-        if (user.email !== 'ankitkaushik6269@gmail.com') {
+        if (!isUserAdmin(user)) {
             toast.error('Only admin can remove recommendations');
             return;
         }
