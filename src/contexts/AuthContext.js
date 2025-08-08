@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChange, getUserProfile } from '@/utils/auth';
+import { createUserDocument } from '@/utils/firestore';
 
 const AuthContext = createContext();
 
@@ -18,11 +19,14 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChange((authUser) => {
+        const unsubscribe = onAuthStateChange(async (authUser) => {
             if (authUser) {
                 // User is signed in
                 const userProfile = getUserProfile();
                 setUser(userProfile);
+
+                // Create user document in Firestore
+                await createUserDocument(authUser);
             } else {
                 // User is signed out
                 setUser(null);

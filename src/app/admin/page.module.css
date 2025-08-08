@@ -465,6 +465,177 @@
     margin: 0;
 }
 
+/* Tab Navigation */
+.tabNavigation {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid rgba(233, 69, 96, 0.3);
+    padding-bottom: 1rem;
+}
+
+.tabButton {
+    background: transparent;
+    color: #b8b8b8;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.tabButton:hover {
+    color: #e94560;
+    background: rgba(233, 69, 96, 0.1);
+}
+
+.tabButton.active {
+    color: #e94560;
+    background: rgba(233, 69, 96, 0.1);
+    border-color: #e94560;
+}
+
+/* Section Header */
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.sectionHeader h2 {
+    font-size: 2rem;
+    color: #e94560;
+    margin: 0;
+}
+
+/* User Management */
+.usersSection {
+    margin-top: 2rem;
+}
+
+.usersSection h2 {
+    font-size: 2rem;
+    color: #e94560;
+    margin-bottom: 1rem;
+}
+
+.usersList {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.userItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.userItem:hover {
+    background: rgba(233, 69, 96, 0.1);
+    border-color: #e94560;
+}
+
+.userItem.selected {
+    background: rgba(233, 69, 96, 0.2);
+    border-color: #e94560;
+    color: #e94560;
+}
+
+.userInfo {
+    flex: 1;
+}
+
+.userName {
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 0.25rem;
+}
+
+.userEmail {
+    font-size: 0.9rem;
+    color: #b8b8b8;
+}
+
+.userActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.viewHistoryButton {
+    background: rgba(233, 69, 96, 0.2);
+    color: #e94560;
+    border: 1px solid #e94560;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.viewHistoryButton:hover {
+    background: #e94560;
+    color: white;
+}
+
+/* User History */
+.userHistory {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.userHistory h3 {
+    font-size: 1.5rem;
+    color: #e94560;
+    margin-bottom: 1rem;
+}
+
+.historyList {
+    display: grid;
+    gap: 1rem;
+}
+
+.historyItem {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.historyDate {
+    font-weight: 600;
+    color: #e94560;
+    margin-bottom: 0.5rem;
+}
+
+.historyTitle {
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.historyType {
+    color: #b8b8b8;
+    margin-bottom: 0.25rem;
+}
+
+.historyEpisode {
+    color: #e94560;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .header {
@@ -512,5 +683,27 @@
 
     .formActions {
         flex-direction: column;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tabNavigation {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tabButton {
+        text-align: center;
+    }
+
+    .userItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .userHistory {
+        padding: 1rem;
     }
 }

@@ -305,4 +305,75 @@ export const deleteRecommendation = async (recommendationId, mediaType) => {
         console.error('Error deleting recommendation:', error);
         toast.error('Failed to delete recommendation');
     }
+};
+
+// Create user document when user signs in
+export const createUserDocument = async (user) => {
+    if (!user || !user.uid) return;
+
+    try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userData = {
+            displayName: user.displayName || 'Unknown',
+            photoURL: user.photoURL || null,
+            email: user.email || 'Unknown',
+            createdAt: serverTimestamp()
+        };
+
+        await setDoc(userDocRef, userData, { merge: true });
+    } catch (error) {
+        console.error('Error creating user document:', error);
+    }
+};
+
+// Get all users (admin only)
+export const getAllUsers = async () => {
+    try {
+        const usersRef = collection(db, 'users');
+        const querySnapshot = await getDocs(usersRef);
+
+        const users = [];
+        querySnapshot.forEach((doc) => {
+            const userData = doc.data();
+            users.push({
+                id: doc.id,
+                displayName: userData.displayName || 'Unknown',
+                photoURL: userData.photoURL || null,
+                email: userData.email || 'Unknown',
+                createdAt: userData.createdAt
+            });
+        });
+
+        return users;
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+    }
+};
+
+// Get user history for admin (admin only)
+export const getUserHistoryForAdmin = async (userId) => {
+    try {
+        const historyRef = collection(db, 'users', userId, 'history');
+        const q = query(historyRef, orderBy('timestamp', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const history = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            history.push({
+                id: doc.id,
+                title: data.title || 'Unknown',
+                mediaType: data.mediaType || 'unknown',
+                timestamp: data.timestamp,
+                season: data.season,
+                episode: data.episode
+            });
+        });
+
+        return history;
+    } catch (error) {
+        console.error('Error fetching user history:', error);
+        return [];
+    }
 }; 

@@ -139,9 +139,8 @@ export default function RootLayout({ children }) {
                             }, 500);
                         `
                     }}
-                />
+                /> 
 
-                {/* Structured Data for Rich Snippets */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{
@@ -170,24 +169,14 @@ export default function RootLayout({ children }) {
                             }
                         })
                     }}
-                />
+                /> 
             </head>
             <body className="text-white bg-black">
                 <AuthProvider>
                     <Navbar />
                     {children}
                     <Footer />
-                    <Toaster
-                        position="top-right"
-                        toastOptions={{
-                            duration: 3000,
-                            style: {
-                                background: '#1a1a2e',
-                                color: '#fff',
-                                border: '1px solid #e94560',
-                            },
-                        }}
-                    />
+                    <Toaster/>
                 </AuthProvider>
             </body>
         </html>

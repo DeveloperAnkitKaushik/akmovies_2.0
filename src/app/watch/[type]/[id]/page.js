@@ -14,7 +14,7 @@ import { IoIosPlayCircle } from "react-icons/io";
 import { IoPlayForward } from "react-icons/io5";
 import { IoPlayBack } from "react-icons/io5";
 import { FaCloudBolt } from "react-icons/fa6";
-import { FaPlus, FaShare } from "react-icons/fa";
+import { FaPlus, FaShare, FaYoutube } from "react-icons/fa";
 import { isUserAdmin } from '@/utils/admin';
 
 export default function WatchPage() {
@@ -36,6 +36,34 @@ export default function WatchPage() {
   const [servers, setServers] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [titleLogo, setTitleLogo] = useState(null);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [trailerKey, setTrailerKey] = useState(null);
+
+  // PWA Orientation Control
+  useEffect(() => {
+    // Lock orientation to portrait when not playing
+    const lockOrientation = () => {
+      if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.lock) {
+        if (!isPlaying) {
+          screen.orientation.lock('portrait').catch(() => {
+            // Ignore errors if orientation lock is not supported
+          });
+        } else {
+          // Allow landscape when playing
+          screen.orientation.unlock();
+        }
+      }
+    };
+
+    lockOrientation();
+
+    // Cleanup on unmount
+    return () => {
+      if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    };
+  }, [isPlaying]);
 
   // Fetch title logo
   useEffect(() => {
@@ -142,6 +170,16 @@ export default function WatchPage() {
 
         setDetails(data);
 
+        // Extract trailer key from videos
+        if (data?.videos?.results) {
+          const trailer = data.videos.results.find(
+            video => video.type === 'Trailer' && video.site === 'YouTube'
+          );
+          if (trailer) {
+            setTrailerKey(trailer.key);
+          }
+        }
+
         // Fetch similar content
         if (data?.similar?.results) {
           setSimilarContent(data.similar.results.slice(0, 10));
@@ -241,9 +279,9 @@ export default function WatchPage() {
     if (!server) return '';
 
     if (type === 'movie') {
-      return `${server.url}/movie/${actualId}`;
+      return `${server.url}/movie/${actualId}/?color=e94560&autoplay=true`;
     } else {
-      return `${server.url}/tv/${actualId}/${selectedSeason}/${selectedEpisode}`;
+      return `${server.url}/tv/${actualId}/${selectedSeason}/${selectedEpisode}/?color=e94560&autoplay=true`;
     }
   };
 
@@ -361,6 +399,18 @@ export default function WatchPage() {
     }
   };
 
+  const handleTrailerClick = () => {
+    if (trailerKey) {
+      setShowTrailer(true);
+    } else {
+      toast.error('No trailer available for this content');
+    }
+  };
+
+  const closeTrailer = () => {
+    setShowTrailer(false);
+  };
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -387,6 +437,25 @@ export default function WatchPage() {
 
   return (
     <div className={styles.container}>
+      {/* Trailer Modal */}
+      {showTrailer && trailerKey && (
+        <div className={styles.trailerOverlay} onClick={closeTrailer}>
+          <div className={styles.trailerModal} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.closeTrailer} onClick={closeTrailer}>
+              ×
+            </button>
+            <iframe
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=0`}
+              title="Trailer"
+              frameBorder="0"
+
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className={styles.trailerIframe}
+            />
+          </div>
+        </div>
+      )}
       <div className={styles.bgoverlay}>
         <div className={styles.overlay}></div>
         <div className={styles.backdrop} style={{ backgroundImage: `url(${getImageUrl(details.backdrop_path, 'original')})` }}></div>
@@ -464,6 +533,21 @@ export default function WatchPage() {
                   </div>
                 </div>
               </div>
+              <div className={styles.actionButtons}>
+                <button
+                  className={styles.trailerButton}
+                  onClick={handleTrailerClick}
+                  disabled={!trailerKey}
+                >
+                  <FaYoutube /> {trailerKey ? 'Watch Trailer' : 'No Trailer'}
+                </button>
+                <button
+                  className={styles.shareButton}
+                  onClick={handleShare}
+                >
+                  <FaShare /> Share
+                </button>
+              </div>
             </div>
           </div>
 
@@ -536,13 +620,6 @@ export default function WatchPage() {
                 title="Add to recommendations (Admin only)"
               >
                 <FaPlus /> Add
-              </button>
-              <button
-                className={styles.adminButton}
-                onClick={handleShare}
-                title="Share this content"
-              >
-                <FaShare /> Share
               </button>
             </div>
           )}

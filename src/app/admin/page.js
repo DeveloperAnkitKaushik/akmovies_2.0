@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Topbar from '@/components/Topbar';
-import { getServers, addServer, updateServer, deleteServer } from '@/utils/firestore';
+import { getServers, addServer, updateServer, deleteServer, getAllUsers, getUserHistoryForAdmin } from '@/utils/firestore';
 import { validateAdminAccess, logAdminAction, checkRateLimit, getAdminInfo } from '@/utils/admin';
 import { FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaGripVertical } from 'react-icons/fa';
 import styles from './page.module.css';
@@ -19,6 +19,14 @@ export default function AdminPage() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingServer, setEditingServer] = useState(null);
     const [newServer, setNewServer] = useState({ name: '', url: '' });
+
+    // User management state
+    const [users, setUsers] = useState([]);
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [userHistory, setUserHistory] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [activeTab, setActiveTab] = useState('servers'); // 'servers' or 'users'
 
     // Validate admin access
     const adminValidation = validateAdminAccess(user, isAuthenticated);
@@ -49,6 +57,7 @@ export default function AdminPage() {
     useEffect(() => {
         if (isAdmin) {
             fetchServers();
+            fetchUsers();
         }
     }, [isAdmin]);
 
@@ -203,6 +212,37 @@ export default function AdminPage() {
         setEditingServer(null);
     };
 
+    const fetchUsers = async () => {
+        try {
+            setLoadingUsers(true);
+            const usersData = await getAllUsers();
+            setUsers(usersData);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            toast.error('Failed to fetch users');
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
+    const fetchUserHistory = async (userId) => {
+        try {
+            setLoadingHistory(true);
+            const historyData = await getUserHistoryForAdmin(userId);
+            setUserHistory(historyData);
+        } catch (error) {
+            console.error('Error fetching user history:', error);
+            toast.error('Failed to fetch user history');
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    const handleUserSelect = (user) => {
+        setSelectedUser(user);
+        fetchUserHistory(user.id);
+    };
+
     // Show loading while checking authentication
     if (!isAuthenticated) {
         return (
@@ -241,7 +281,7 @@ export default function AdminPage() {
             <div className="main-container">
                 <div className={styles.content}>
                     <div className={styles.header}>
-                        <h1>Server Management</h1>
+                        <h1>Admin Panel</h1>
                         {adminInfo && (
                             <div className={styles.adminInfo}>
                                 <span>Logged in as: {adminInfo.email}</span>
@@ -250,165 +290,283 @@ export default function AdminPage() {
                                 )}
                             </div>
                         )}
+                    </div>
+
+                    {/* Tab Navigation */}
+                    <div className={styles.tabNavigation}>
                         <button
-                            className={styles.addButton}
-                            onClick={() => setShowAddForm(true)}
+                            className={`${styles.tabButton} ${activeTab === 'servers' ? styles.active : ''}`}
+                            onClick={() => setActiveTab('servers')}
                         >
-                            <FaPlus /> Add Server
+                            Server Management
+                        </button>
+                        <button
+                            className={`${styles.tabButton} ${activeTab === 'users' ? styles.active : ''}`}
+                            onClick={() => setActiveTab('users')}
+                        >
+                            User Management ({users.length})
                         </button>
                     </div>
 
-                    {loading ? (
-                        <div className={styles.loading}>
-                            <div className={styles.spinner}></div>
-                            <p>Loading servers...</p>
-                        </div>
-                    ) : (
+                    {/* Server Management Tab */}
+                    {activeTab === 'servers' && (
                         <>
-                            {showAddForm && (
-                                <div className={styles.formOverlay}>
-                                    <div className={styles.formContainer}>
-                                        <div className={styles.formHeader}>
-                                            <h3>Add New Server</h3>
-                                            <button
-                                                className={styles.closeButton}
-                                                onClick={() => setShowAddForm(false)}
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </div>
-                                        <form onSubmit={handleAddServer} className={styles.form}>
-                                            <div className={styles.formGroup}>
-                                                <label htmlFor="serverName">Server Name</label>
-                                                <input
-                                                    type="text"
-                                                    id="serverName"
-                                                    value={newServer.name}
-                                                    onChange={(e) => setNewServer({ ...newServer, name: e.target.value })}
-                                                    placeholder="Enter server name"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className={styles.formGroup}>
-                                                <label htmlFor="serverUrl">Server URL</label>
-                                                <input
-                                                    type="url"
-                                                    id="serverUrl"
-                                                    value={newServer.url}
-                                                    onChange={(e) => setNewServer({ ...newServer, url: e.target.value })}
-                                                    placeholder="https://example.com/embed"
-                                                    required
-                                                />
-                                            </div>
-                                            <div className={styles.formActions}>
-                                                <button type="button" onClick={() => setShowAddForm(false)} className={styles.cancelButton}>
-                                                    Cancel
-                                                </button>
-                                                <button type="submit" className={styles.saveButton}>
-                                                    <FaSave /> Add Server
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
+                            <div className={styles.sectionHeader}>
+                                <h2>Server Management</h2>
+                                <button
+                                    className={styles.addButton}
+                                    onClick={() => setShowAddForm(true)}
+                                >
+                                    <FaPlus /> Add Server
+                                </button>
+                            </div>
+
+                            {loading ? (
+                                <div className={styles.loading}>
+                                    <div className={styles.spinner}></div>
+                                    <p>Loading servers...</p>
                                 </div>
-                            )}
+                            ) : (
+                                <>
+                                    {showAddForm && (
+                                        <div className={styles.formOverlay}>
+                                            <div className={styles.formContainer}>
+                                                <div className={styles.formHeader}>
+                                                    <h3>Add New Server</h3>
+                                                    <button
+                                                        className={styles.closeButton}
+                                                        onClick={() => setShowAddForm(false)}
+                                                    >
+                                                        <FaTimes />
+                                                    </button>
+                                                </div>
+                                                <form onSubmit={handleAddServer} className={styles.form}>
+                                                    <div className={styles.formGroup}>
+                                                        <label htmlFor="serverName">Server Name</label>
+                                                        <input
+                                                            type="text"
+                                                            id="serverName"
+                                                            value={newServer.name}
+                                                            onChange={(e) => setNewServer({ ...newServer, name: e.target.value })}
+                                                            placeholder="Enter server name"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className={styles.formGroup}>
+                                                        <label htmlFor="serverUrl">Server URL</label>
+                                                        <input
+                                                            type="url"
+                                                            id="serverUrl"
+                                                            value={newServer.url}
+                                                            onChange={(e) => setNewServer({ ...newServer, url: e.target.value })}
+                                                            placeholder="https://example.com/embed"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className={styles.formActions}>
+                                                        <button type="button" onClick={() => setShowAddForm(false)} className={styles.cancelButton}>
+                                                            Cancel
+                                                        </button>
+                                                        <button type="submit" className={styles.saveButton}>
+                                                            <FaSave /> Add Server
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    )}
 
-                            <div className={styles.serversSection}>
-                                <h2>Servers ({servers.length})</h2>
-                                <p className={styles.sectionDescription}>
-                                    Drag and drop servers to reorder them. The order determines the display order on the watch page.
-                                </p>
+                                    <div className={styles.serversSection}>
+                                        <p className={styles.sectionDescription}>
+                                            Drag and drop servers to reorder them. The order determines the display order on the watch page.
+                                        </p>
 
-                                <DragDropContext onDragEnd={handleDragEnd}>
-                                    <Droppable droppableId="servers">
-                                        {(provided) => (
-                                            <div
-                                                {...provided.droppableProps}
-                                                ref={provided.innerRef}
-                                                className={styles.serversList}
-                                            >
-                                                {servers.map((server, index) => (
-                                                    <Draggable key={server.id} draggableId={server.id} index={index}>
-                                                        {(provided, snapshot) => (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                                className={`${styles.serverItem} ${snapshot.isDragging ? styles.dragging : ''}`}
-                                                            >
-                                                                <div className={styles.serverContent}>
-                                                                    <div {...provided.dragHandleProps} className={styles.dragHandle}>
-                                                                        <FaGripVertical />
+                                        <DragDropContext onDragEnd={handleDragEnd}>
+                                            <Droppable droppableId="servers">
+                                                {(provided) => (
+                                                    <div
+                                                        {...provided.droppableProps}
+                                                        ref={provided.innerRef}
+                                                        className={styles.serversList}
+                                                    >
+                                                        {servers.map((server, index) => (
+                                                            <Draggable key={server.id} draggableId={server.id} index={index}>
+                                                                {(provided, snapshot) => (
+                                                                    <div
+                                                                        ref={provided.innerRef}
+                                                                        {...provided.draggableProps}
+                                                                        className={`${styles.serverItem} ${snapshot.isDragging ? styles.dragging : ''}`}
+                                                                    >
+                                                                        <div className={styles.serverContent}>
+                                                                            <div {...provided.dragHandleProps} className={styles.dragHandle}>
+                                                                                <FaGripVertical />
+                                                                            </div>
+
+                                                                            {editingServer?.id === server.id ? (
+                                                                                <form onSubmit={handleEditServer} className={styles.editForm}>
+                                                                                    <div className={styles.editInputs}>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={editingServer.name}
+                                                                                            onChange={(e) => setEditingServer({ ...editingServer, name: e.target.value })}
+                                                                                            placeholder="Server name"
+                                                                                            required
+                                                                                        />
+                                                                                        <input
+                                                                                            type="url"
+                                                                                            value={editingServer.url}
+                                                                                            onChange={(e) => setEditingServer({ ...editingServer, url: e.target.value })}
+                                                                                            placeholder="Server URL"
+                                                                                            required
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className={styles.editActions}>
+                                                                                        <button type="button" onClick={cancelEditing} className={styles.cancelButton}>
+                                                                                            <FaTimes />
+                                                                                        </button>
+                                                                                        <button type="submit" className={styles.saveButton}>
+                                                                                            <FaSave />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <div className={styles.serverInfo}>
+                                                                                        <div className={styles.serverName}>{server.name}</div>
+                                                                                        <div className={styles.serverUrl}>{server.url}</div>
+                                                                                        <div className={styles.serverOrder}>Order: {server.order_number}</div>
+                                                                                    </div>
+                                                                                    <div className={styles.serverActions}>
+                                                                                        <button
+                                                                                            onClick={() => startEditing(server)}
+                                                                                            className={styles.editButton}
+                                                                                            title="Edit server"
+                                                                                        >
+                                                                                            <FaEdit />
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => handleDeleteServer(server.id)}
+                                                                                            className={styles.deleteButton}
+                                                                                            title="Delete server"
+                                                                                        >
+                                                                                            <FaTrash />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
+                                                                )}
+                                                            </Draggable>
+                                                        ))}
+                                                        {provided.placeholder}
+                                                    </div>
+                                                )}
+                                            </Droppable>
+                                        </DragDropContext>
 
-                                                                    {editingServer?.id === server.id ? (
-                                                                        <form onSubmit={handleEditServer} className={styles.editForm}>
-                                                                            <div className={styles.editInputs}>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    value={editingServer.name}
-                                                                                    onChange={(e) => setEditingServer({ ...editingServer, name: e.target.value })}
-                                                                                    placeholder="Server name"
-                                                                                    required
-                                                                                />
-                                                                                <input
-                                                                                    type="url"
-                                                                                    value={editingServer.url}
-                                                                                    onChange={(e) => setEditingServer({ ...editingServer, url: e.target.value })}
-                                                                                    placeholder="Server URL"
-                                                                                    required
-                                                                                />
-                                                                            </div>
-                                                                            <div className={styles.editActions}>
-                                                                                <button type="button" onClick={cancelEditing} className={styles.cancelButton}>
-                                                                                    <FaTimes />
-                                                                                </button>
-                                                                                <button type="submit" className={styles.saveButton}>
-                                                                                    <FaSave />
-                                                                                </button>
-                                                                            </div>
-                                                                        </form>
-                                                                    ) : (
-                                                                        <>
-                                                                            <div className={styles.serverInfo}>
-                                                                                <div className={styles.serverName}>{server.name}</div>
-                                                                                <div className={styles.serverUrl}>{server.url}</div>
-                                                                                <div className={styles.serverOrder}>Order: {server.order_number}</div>
-                                                                            </div>
-                                                                            <div className={styles.serverActions}>
-                                                                                <button
-                                                                                    onClick={() => startEditing(server)}
-                                                                                    className={styles.editButton}
-                                                                                    title="Edit server"
-                                                                                >
-                                                                                    <FaEdit />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleDeleteServer(server.id)}
-                                                                                    className={styles.deleteButton}
-                                                                                    title="Delete server"
-                                                                                >
-                                                                                    <FaTrash />
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </Draggable>
-                                                ))}
-                                                {provided.placeholder}
+                                        {servers.length === 0 && (
+                                            <div className={styles.emptyState}>
+                                                <p>No servers found. Add your first server to get started.</p>
                                             </div>
                                         )}
-                                    </Droppable>
-                                </DragDropContext>
-
-                                {servers.length === 0 && (
-                                    <div className={styles.emptyState}>
-                                        <p>No servers found. Add your first server to get started.</p>
                                     </div>
-                                )}
-                            </div>
+                                </>
+                            )}
+
+                            {/* User Management Tab */}
+                            {activeTab === 'users' && (
+                                <div className={styles.usersSection}>
+                                    <div className={styles.sectionHeader}>
+                                        <h2>User Management ({users.length})</h2>
+                                        <button
+                                            className={styles.addButton}
+                                            onClick={fetchUsers}
+                                            title="Refresh users"
+                                        >
+                                            <FaPlus /> Refresh Users
+                                        </button>
+                                    </div>
+                                    <p className={styles.sectionDescription}>
+                                        Manage user accounts and their viewing history.
+                                    </p>
+
+                                    {loadingUsers ? (
+                                        <div className={styles.loading}>
+                                            <div className={styles.spinner}></div>
+                                            <p>Loading users...</p>
+                                        </div>
+                                    ) : (
+                                        <div className={styles.usersList}>
+                                            {users.map((user) => (
+                                                <div
+                                                    key={user.id}
+                                                    className={`${styles.userItem} ${selectedUser?.id === user.id ? styles.selected : ''}`}
+                                                    onClick={() => handleUserSelect(user)}
+                                                >
+                                                    <div className={styles.userInfo}>
+                                                        <div className={styles.userName}>{user.displayName || user.email}</div>
+                                                        <div className={styles.userEmail}>{user.email}</div>
+                                                    </div>
+                                                    <div className={styles.userActions}>
+                                                        <button
+                                                            onClick={() => handleUserSelect(user)}
+                                                            className={styles.viewHistoryButton}
+                                                            title="View history"
+                                                        >
+                                                            <FaEdit />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {users.length === 0 && (
+                                                <div className={styles.emptyState}>
+                                                    <p>No users found. New users will be added automatically.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {selectedUser && (
+                                        <div className={styles.userHistory}>
+                                            <h3>History for {selectedUser.displayName || selectedUser.email}</h3>
+                                            {loadingHistory ? (
+                                                <div className={styles.loading}>
+                                                    <div className={styles.spinner}></div>
+                                                    <p>Loading history...</p>
+                                                </div>
+                                            ) : (
+                                                <div className={styles.historyList}>
+                                                    {userHistory.map((item, index) => (
+                                                        <div key={index} className={styles.historyItem}>
+                                                            <div className={styles.historyDate}>
+                                                                {item.timestamp ?
+                                                                    (item.timestamp.toDate ?
+                                                                        new Date(item.timestamp.toDate()).toLocaleString() :
+                                                                        new Date(item.timestamp).toLocaleString()
+                                                                    ) : 'Unknown'
+                                                                }
+                                                            </div>
+                                                            <div className={styles.historyTitle}>{item.title}</div>
+                                                            <div className={styles.historyType}>Type: {item.mediaType}</div>
+                                                            {item.season && item.episode && (
+                                                                <div className={styles.historyEpisode}>
+                                                                    Season {item.season}, Episode {item.episode}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    {userHistory.length === 0 && (
+                                                        <div className={styles.emptyState}>
+                                                            <p>No history found for this user.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
