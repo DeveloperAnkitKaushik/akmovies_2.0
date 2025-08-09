@@ -56,6 +56,17 @@ export const ensureUniqueKeys = (items) => {
     }));
 };
 
+// A new, more powerful function to handle complex filtering
+export const discoverContent = async (mediaType, params) => {
+    const data = await tmdbFetch(`/discover/${mediaType}`, params);
+    const filteredData = filterValidContent(data.results);
+    return {
+        results: ensureUniqueKeys(filteredData),
+        totalPages: data.total_pages,
+        page: data.page,
+    };
+};
+
 // Generic fetch function for TMDB API
 const tmdbFetch = async (endpoint, params = {}) => {
     const apiKey = getApiKey();

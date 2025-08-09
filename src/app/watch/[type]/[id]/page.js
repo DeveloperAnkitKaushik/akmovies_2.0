@@ -512,7 +512,7 @@ export default function WatchPage() {
               <div className={styles.maininfo}>
                 <div className={`${styles.maininfocolumn}`}>
                   <div className={styles.label}>
-                    <span>Country:</span> {details.production_countries?.[0]?.name || 'United States'}
+                    <span>Country:</span> <a href={`/browse?country=${details.production_countries?.[0]?.iso_3166_1}&type=${type}`} style={{ textDecoration: 'underline' }}>{details.production_countries?.[0]?.name || 'United States'}</a>
                   </div>
                   <div className={styles.label}>
                     <span>Released Date:</span> {releaseDate ? new Date(releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}

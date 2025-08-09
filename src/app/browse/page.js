@@ -16,7 +16,8 @@ import {
     getOnTheAirTVShows,
     getAiringTodayTVShows,
     getTVGenres,
-    getTVShowsByGenre
+    getTVShowsByGenre,
+    discoverContent
 } from '@/utils/tmdb';
 import { FaFilter, FaChevronDown, FaFilm, FaTv } from 'react-icons/fa';
 import styles from './page.module.css';
@@ -33,6 +34,7 @@ export default function BrowsePage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState(null);
 
     const movieTabs = [
         { id: 'popular', label: 'Popular', fetch: getPopularMovies },
@@ -48,22 +50,50 @@ export default function BrowsePage() {
         { id: 'airing_today', label: 'Airing Today', fetch: getAiringTodayTVShows },
     ];
 
+    const countryOptions = [
+        { code: 'AU', name: 'Australia' },
+        { code: 'BR', name: 'Brazil' },
+        { code: 'CA', name: 'Canada' },
+        { code: 'CN', name: 'China' },
+        { code: 'FR', name: 'France' },
+        { code: 'DE', name: 'Germany' },
+        { code: 'HK', name: 'Hong Kong' },
+        { code: 'IN', name: 'India' },
+        { code: 'IT', name: 'Italy' },
+        { code: 'JP', name: 'Japan' },
+        { code: 'MX', name: 'Mexico' },
+        { code: 'KR', name: 'South Korea' },
+        { code: 'ES', name: 'Spain' },
+        { code: 'TR', name: 'Turkey' },
+        { code: 'GB', name: 'United Kingdom' },
+        { code: 'US', name: 'United States' },
+    ];
+
     const currentTabs = mediaType === 'movie' ? movieTabs : tvTabs;
     const currentGenres = mediaType === 'movie' ? movieGenres : tvGenres;
 
     // Handle URL query parameters
+    // The new, updated useEffect for ALL URL params
     useEffect(() => {
         const urlGenre = searchParams.get('genre');
         const urlType = searchParams.get('type');
+        const urlCountry = searchParams.get('country'); // <-- Added
 
         if (urlType && (urlType === 'movie' || urlType === 'tv')) {
             setMediaType(urlType);
         }
 
+        // Handle country from URL
+        if (urlCountry) { // <-- Added
+            setSelectedCountry(urlCountry);
+            setActiveTab(''); // Prioritize specific filters over default tabs
+        }
+
+        // Handle genre from URL
         if (urlGenre) {
             const genreId = parseInt(urlGenre);
             setSelectedGenre(genreId);
-            setActiveTab(''); // Clear active tab when genre is selected
+            setActiveTab('');
         }
     }, [searchParams]);
 
@@ -100,42 +130,39 @@ export default function BrowsePage() {
         fetchGenres();
     }, []);
 
-    const fetchContent = async (tab, genre = null, page = 1) => {
+    const fetchContent = async (tab, genre = null, country = null, page = 1) => {
         try {
             setLoading(true);
             let data;
 
-            if (genre) {
-                // If genre is selected, filter by genre (this overrides category)
-                if (mediaType === 'movie') {
-                    data = await getMoviesByGenre(genre, page);
-                } else {
-                    data = await getTVShowsByGenre(genre, page);
-                }
-            } else if (tab) {
-                // If no genre but tab is selected, use the category
-                const tabData = currentTabs.find(t => t.id === tab);
-                if (tabData) {
-                    data = await tabData.fetch(page);
-                } else {
-                    // If the current tab doesn't exist in the new media type, use the first available tab
-                    const firstTab = currentTabs[0];
-                    if (firstTab) {
-                        setActiveTab(firstTab.id);
-                        data = await firstTab.fetch(page);
-                    } else {
-                        throw new Error('No tabs available for this media type');
-                    }
-                }
-            } else {
-                // Default to popular if nothing is selected
-                const firstTab = currentTabs[0];
-                if (firstTab) {
-                    setActiveTab(firstTab.id);
-                    data = await firstTab.fetch(page);
-                } else {
-                    throw new Error('No tabs available for this media type');
-                }
+            // Use the new, powerful discover endpoint
+            const params = { page };
+            if (genre) params.with_genres = genre;
+            if (country) params.with_origin_country = country;
+
+            // Determine how to sort the results based on the active tab
+            if (tab === 'top_rated') {
+                params.sort_by = 'vote_average.desc';
+                params['vote_count.gte'] = 200; // Ensures top-rated results are meaningful
+            } else if (mediaType === 'movie' && tab === 'now_playing') {
+                // Note: Now Playing/Upcoming don't work with country/genre filters,
+                // so we must choose one. The tab is more specific.
+                data = await getNowPlayingMovies(page);
+            } else if (mediaType === 'movie' && tab === 'upcoming') {
+                data = await getUpcomingMovies(page);
+            } else if (mediaType === 'tv' && tab === 'on_the_air') {
+                data = await getOnTheAirTVShows(page);
+            } else if (mediaType === 'tv' && tab === 'airing_today') {
+                data = await getAiringTodayTVShows(page);
+            }
+            else {
+                // Default sort for 'popular' or when mixing filters
+                params.sort_by = 'popularity.desc';
+            }
+
+            // If data hasn't been fetched by a specific tab function, use discover
+            if (!data) {
+                data = await discoverContent(mediaType, params);
             }
 
             if (page === 1) {
@@ -154,14 +181,12 @@ export default function BrowsePage() {
     };
 
     useEffect(() => {
-        // Only fetch content if we have a valid tab or genre selected
-        if (activeTab || selectedGenre) {
-            fetchContent(activeTab, selectedGenre);
+        if (activeTab || selectedGenre || selectedCountry) {
+            fetchContent(activeTab, selectedGenre, selectedCountry);
         } else {
-            // Set default tab if nothing is selected
             setActiveTab('popular');
         }
-    }, [activeTab, selectedGenre, mediaType]);
+    }, [activeTab, selectedGenre, selectedCountry, mediaType]);
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
@@ -183,7 +208,7 @@ export default function BrowsePage() {
 
     const loadMore = () => {
         if (currentPage < totalPages && !loading) {
-            fetchContent(activeTab, selectedGenre, currentPage + 1);
+            fetchContent(activeTab, selectedGenre, selectedCountry, currentPage + 1);
         }
     };
 
@@ -228,6 +253,11 @@ export default function BrowsePage() {
             // Only category is selected
             return `${categoryLabel} ${contentTypeLabel}`;
         }
+    };
+
+    const handleCountryChange = (countryCode) => {
+        setSelectedCountry(countryCode);
+        setCurrentPage(1); // Reset to the first page on a new filter
     };
 
     return (
@@ -282,6 +312,27 @@ export default function BrowsePage() {
                                                     className={`${styles.filterOption} ${activeTab === tab.id ? styles.active : ''}`}
                                                 >
                                                     {tab.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.filterSection}>
+                                        <h3 className={styles.filterSectionTitle}>Origin Country</h3>
+                                        <div className={styles.filterOptions}>
+                                            <button
+                                                onClick={() => handleCountryChange(null)}
+                                                className={`${styles.filterOption} ${!selectedCountry ? styles.active : ''}`}
+                                            >
+                                                All Countries
+                                            </button>
+                                            {countryOptions.map((country) => (
+                                                <button
+                                                    key={country.code}
+                                                    onClick={() => handleCountryChange(country.code)}
+                                                    className={`${styles.filterOption} ${selectedCountry === country.code ? styles.active : ''}`}
+                                                >
+                                                    {country.name}
                                                 </button>
                                             ))}
                                         </div>
