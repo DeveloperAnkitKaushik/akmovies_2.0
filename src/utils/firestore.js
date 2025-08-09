@@ -136,7 +136,7 @@ export const getServers = async () => {
         querySnapshot.forEach((doc) => {
             servers.push({
                 id: doc.id,
-                name: `Server ${doc.data().order_number}`,
+                name: doc.data().name,
                 url: doc.data().url,
                 order_number: doc.data().order_number
             });

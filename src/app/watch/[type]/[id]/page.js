@@ -279,9 +279,9 @@ export default function WatchPage() {
     if (!server) return '';
 
     if (type === 'movie') {
-      return `${server.url}/movie/${actualId}/?color=e94560&autoplay=true`;
+      return `${server.url}/movie/${actualId}/?color=e94560&autoplay=true&primarycolor=e94560&server=13`;
     } else {
-      return `${server.url}/tv/${actualId}/${selectedSeason}/${selectedEpisode}/?color=e94560&autoplay=true`;
+      return `${server.url}/tv/${actualId}/${selectedSeason}/${selectedEpisode}/?color=e94560&autoplay=true&primarycolor=e94560&server=13`;
     }
   };
 

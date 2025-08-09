@@ -139,7 +139,7 @@ export default function RootLayout({ children }) {
                             }, 500);
                         `
                     }}
-                /> 
+                />
 
                 <script
                     type="application/ld+json"
@@ -169,14 +169,14 @@ export default function RootLayout({ children }) {
                             }
                         })
                     }}
-                /> 
+                />
             </head>
             <body className="text-white bg-black">
                 <AuthProvider>
                     <Navbar />
                     {children}
                     <Footer />
-                    <Toaster/>
+                    <Toaster />
                 </AuthProvider>
             </body>
         </html>
