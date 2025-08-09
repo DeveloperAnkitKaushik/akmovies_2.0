@@ -83,6 +83,27 @@ export default function WatchPage() {
     fetchTitleLogo();
   }, [actualId, type]);
 
+  useEffect(() => {
+    // We only want to update progress for logged-in users watching a TV show
+    if (type === 'tv' && isAuthenticated && user?.uid && actualId) {
+      console.log(`Updating progress: S${selectedSeason} E${selectedEpisode}`); // Optional: for debugging
+      
+      // Update the progress in Firestore
+      updateContinueWatchingProgress(
+        user.uid,
+        parseInt(actualId),
+        type,
+        selectedSeason,
+        selectedEpisode
+      );
+  
+      // We can also save to the general history here if needed
+      if(details) {
+        saveToHistory(details);
+      }
+    }
+  }, [selectedSeason, selectedEpisode, isAuthenticated, user, actualId, type, details]); // The dependency array
+
   // Save to continue watching
   const saveToHistory = async (contentDetails) => {
     if (!isAuthenticated || !user?.uid || !contentDetails) return;
@@ -218,13 +239,6 @@ export default function WatchPage() {
 
     setSelectedSeason(newSeason);
     setSelectedEpisode(newEpisode);
-
-    // Update continue watching progress
-    if (isAuthenticated && user?.uid && details) {
-      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, newSeason, newEpisode);
-      // Also save to history when navigating
-      saveToHistory(details);
-    }
   };
 
   const goToNextEpisode = async () => {
@@ -247,13 +261,6 @@ export default function WatchPage() {
 
     setSelectedSeason(newSeason);
     setSelectedEpisode(newEpisode);
-
-    // Update continue watching progress
-    if (isAuthenticated && user?.uid && details) {
-      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, newSeason, newEpisode);
-      // Also save to history when navigating
-      saveToHistory(details);
-    }
   };
 
   // Check if navigation buttons should be disabled
@@ -328,21 +335,11 @@ export default function WatchPage() {
     setSelectedSeason(seasonNumber);
     setSelectedEpisode(1);
     setShowSeasonDropdown(false);
-
-    // Update continue watching progress
-    if (isAuthenticated && user?.uid) {
-      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, seasonNumber, 1);
-    }
   };
 
   // Handle episode selection
   const handleEpisodeSelect = async (episodeNumber) => {
     setSelectedEpisode(episodeNumber);
-
-    // Update continue watching progress
-    if (isAuthenticated && user?.uid && actualId) {
-      await updateContinueWatchingProgress(user.uid, parseInt(actualId), type, selectedSeason, episodeNumber);
-    }
   };
 
   // Handle add to recommendations (admin only)
