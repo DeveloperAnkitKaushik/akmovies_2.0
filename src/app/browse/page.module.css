@@ -93,7 +93,6 @@
     backdrop-filter: blur(20px);
     border-radius: 12px;
     animation: all 0.4s ease;
-    max-height: 80vh;
     overflow: hidden;
     margin-bottom: 4rem;
 }
@@ -300,9 +299,6 @@
         font-size: 1.1rem;
     }
 
-    .filterExpanded {
-        max-height: 90vh;
-    }
 
     .filterHeader {
         padding: 1rem 1.5rem;

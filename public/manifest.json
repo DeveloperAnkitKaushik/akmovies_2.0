@@ -1,62 +1,63 @@
 {
-    "name": "AKMovies - Watch Movies & TV Series Online",
-    "short_name": "AKMovies",
-    "description": "Watch the latest movies and TV series online for free on AKMovies. Stream HD quality content including Hollywood, Bollywood, and international films.",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#000000",
-    "theme_color": "#e94560",
-    "orientation": "portrait-primary",
-    "scope": "/",
-    "lang": "en",
-    "categories": ["entertainment", "video", "movies"],
-    "icons": [
+  "name": "AKMovies - Watch Movies & TV Series Online",
+  "short_name": "AKMovies",
+  "description": "Watch the latest movies and TV series online for free on AKMovies. Stream HD quality content including Hollywood, Bollywood, and international films.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#e94560",
+  "orientation": "portrait",
+  "display_override": ["standalone", "minimal-ui"],
+  "scope": "/",
+  "lang": "en",
+  "categories": ["entertainment", "video", "movies"],
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "AKMovies Homepage"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Search Movies",
+      "short_name": "Search",
+      "description": "Search for movies and TV series",
+      "url": "/search",
+      "icons": [
         {
-            "src": "/icon.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "/icon.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
+          "src": "/icon.png",
+          "sizes": "96x96"
         }
-    ],
-    "screenshots": [
+      ]
+    },
+    {
+      "name": "Browse Content",
+      "short_name": "Browse",
+      "description": "Browse movies and TV series by genre",
+      "url": "/browse",
+      "icons": [
         {
-            "src": "/logo.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "AKMovies Homepage"
+          "src": "/icon.png",
+          "sizes": "96x96"
         }
-    ],
-    "shortcuts": [
-        {
-            "name": "Search Movies",
-            "short_name": "Search",
-            "description": "Search for movies and TV series",
-            "url": "/search",
-            "icons": [
-                {
-                    "src": "/icon.png",
-                    "sizes": "96x96"
-                }
-            ]
-        },
-        {
-            "name": "Browse Content",
-            "short_name": "Browse",
-            "description": "Browse movies and TV series by genre",
-            "url": "/browse",
-            "icons": [
-                {
-                    "src": "/icon.png",
-                    "sizes": "96x96"
-                }
-            ]
-        }
-    ]
-} 
+      ]
+    }
+  ]
+}

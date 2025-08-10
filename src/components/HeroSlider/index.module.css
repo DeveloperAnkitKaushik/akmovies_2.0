@@ -5,6 +5,7 @@
     height: 100vh;
     overflow: hidden;
     background: black;
+    min-height: 35rem;
 }
 
 /* Embla Carousel Styles */

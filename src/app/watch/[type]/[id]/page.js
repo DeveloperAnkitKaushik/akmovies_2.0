@@ -18,18 +18,18 @@ import { FaPlus, FaShare, FaYoutube } from "react-icons/fa";
 import { isUserAdmin } from '@/utils/admin';
 
 export default function WatchPage() {
-  const params = useParams();
+    const params = useParams();
   const router = useRouter();
-  const { type, id } = params;
+    const { type, id } = params;
   const { user, isAuthenticated } = useAuth();
 
   // Extract the actual ID from the combined id-name parameter
   const actualId = id ? id.split('-')[0] : null;
 
-  const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedSeason, setSelectedSeason] = useState(1);
-  const [selectedEpisode, setSelectedEpisode] = useState(1);
+    const [details, setDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [selectedSeason, setSelectedSeason] = useState(1);
+    const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [selectedServer, setSelectedServer] = useState(1);
   const [similarContent, setSimilarContent] = useState([]);
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
@@ -39,31 +39,7 @@ export default function WatchPage() {
   const [showTrailer, setShowTrailer] = useState(false);
   const [trailerKey, setTrailerKey] = useState(null);
 
-  // PWA Orientation Control
-  useEffect(() => {
-    // Lock orientation to portrait when not playing
-    const lockOrientation = () => {
-      if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.lock) {
-        if (!isPlaying) {
-          screen.orientation.lock('portrait').catch(() => {
-            // Ignore errors if orientation lock is not supported
-          });
-        } else {
-          // Allow landscape when playing
-          screen.orientation.unlock();
-        }
-      }
-    };
 
-    lockOrientation();
-
-    // Cleanup on unmount
-    return () => {
-      if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-      }
-    };
-  }, [isPlaying]);
 
   // Fetch title logo
   useEffect(() => {
@@ -87,7 +63,7 @@ export default function WatchPage() {
     // We only want to update progress for logged-in users watching a TV show
     if (type === 'tv' && isAuthenticated && user?.uid && actualId) {
       console.log(`Updating progress: S${selectedSeason} E${selectedEpisode}`); // Optional: for debugging
-      
+
       // Update the progress in Firestore
       updateContinueWatchingProgress(
         user.uid,
@@ -96,9 +72,9 @@ export default function WatchPage() {
         selectedSeason,
         selectedEpisode
       );
-  
+
       // We can also save to the general history here if needed
-      if(details) {
+      if (details) {
         saveToHistory(details);
       }
     }
@@ -177,19 +153,19 @@ export default function WatchPage() {
     }
   }, [isAuthenticated, isPlaying]);
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        setLoading(true);
-        let data;
+    useEffect(() => {
+        const fetchDetails = async () => {
+            try {
+                setLoading(true);
+                let data;
 
-        if (type === 'movie') {
+                if (type === 'movie') {
           data = await getMovieDetails(actualId);
-        } else if (type === 'tv') {
+                } else if (type === 'tv') {
           data = await getTVShowDetails(actualId);
-        }
+                }
 
-        setDetails(data);
+                setDetails(data);
 
         // Extract trailer key from videos
         if (data?.videos?.results) {
@@ -205,17 +181,17 @@ export default function WatchPage() {
         if (data?.similar?.results) {
           setSimilarContent(data.similar.results.slice(0, 10));
         }
-      } catch (error) {
-        console.error('Error fetching details:', error);
+            } catch (error) {
+                console.error('Error fetching details:', error);
         toast.error('Failed to load content details');
-      } finally {
-        setLoading(false);
-      }
-    };
+            } finally {
+                setLoading(false);
+            }
+        };
 
     if (actualId && type) {
-      fetchDetails();
-    }
+            fetchDetails();
+        }
   }, [actualId, type]);
 
   // Navigation functions for TV series
@@ -408,29 +384,29 @@ export default function WatchPage() {
     setShowTrailer(false);
   };
 
-  if (loading) {
-    return (
+    if (loading) {
+        return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingContent}>
           <div className={styles.spinner}></div>
           <p className={styles.loadingText}>Loading details...</p>
-        </div>
-      </div>
-    );
-  }
+                </div>
+            </div>
+        );
+    }
 
-  if (!details) {
-    return (
+    if (!details) {
+        return (
       <div className={styles.errorContainer}>
         <h1>Content not found</h1>
         <a href="/">Go back home</a>
-      </div>
-    );
-  }
+            </div>
+        );
+    }
 
-  const title = details.title || details.name;
-  const releaseDate = details.release_date || details.first_air_date;
-  const runtime = details.runtime || (details.episode_run_time && details.episode_run_time[0]);
+    const title = details.title || details.name;
+    const releaseDate = details.release_date || details.first_air_date;
+    const runtime = details.runtime || (details.episode_run_time && details.episode_run_time[0]);
 
   return (
     <div className={styles.container}>
@@ -492,12 +468,12 @@ export default function WatchPage() {
                 {runtime && (
                   <div className={styles.releasedate}>
                     {formatRuntime(runtime)}
-                  </div>
-                )}
-              </div>
+                                </div>
+                            )}
+                        </div>
               <div className={styles.description}>
                 {formatDescription(details.overview)}
-              </div>
+                    </div>
               <div className={styles.genres}>
                 {details.genres?.slice(0, 5).map((genre) => (
                   <a
@@ -508,7 +484,7 @@ export default function WatchPage() {
                     {genre.name}
                   </a>
                 ))}
-              </div>
+            </div>
               <div className={styles.maininfo}>
                 <div className={`${styles.maininfocolumn}`}>
                   <div className={styles.label}>
@@ -519,7 +495,7 @@ export default function WatchPage() {
                   </div>
                   <div className={styles.label}>
                     <span>Production:</span> {details.production_companies?.[0]?.name || 'N/A'}
-                  </div>
+        </div>
                 </div>
                 <div className={`${styles.maininfocolumn}`}>
                   <div className={styles.label}>
@@ -527,9 +503,9 @@ export default function WatchPage() {
                   </div>
                   <div className={styles.label}>
                     <span>Cast:</span> {details.credits?.cast?.slice(0, 3).map(a => a.name).join(', ') || 'N/A'}
-                  </div>
-                </div>
-              </div>
+            </div>
+                        </div>
+                    </div>
               <div className={styles.actionButtons}>
                 <button
                   className={styles.trailerButton}
@@ -538,14 +514,14 @@ export default function WatchPage() {
                 >
                   <FaYoutube /> {trailerKey ? 'Watch Trailer' : 'No Trailer'}
                 </button>
-                <button
+                                <button
                   className={styles.shareButton}
                   onClick={handleShare}
-                >
+                                >
                   <FaShare /> Share
-                </button>
-              </div>
-            </div>
+                                </button>
+                            </div>
+                        </div>
           </div>
 
           {/* Server Selection */}
@@ -553,23 +529,7 @@ export default function WatchPage() {
 
           {/* Player Section */}
           <div className={styles.playerSection}>
-            <div className={styles.optionsContainer}>
-              <button
-                className={`${styles.controlbtncontainer} ${!canGoPrevious() ? styles.disabled : ''}`}
-                onClick={goToPreviousEpisode}
-                disabled={!canGoPrevious()}
-              >
-                <IoPlayBack /> Previous
-              </button>
 
-              <button
-                className={`${styles.controlbtncontainer} ${!canGoNext() ? styles.disabled : ''}`}
-                onClick={goToNextEpisode}
-                disabled={!canGoNext()}
-              >
-                Next <IoPlayForward />
-              </button>
-            </div>
 
             {!isPlaying ? (
               <div className={styles.playerContainer} style={{ backgroundImage: `url(${getImageUrl(details.backdrop_path, 'original')})` }}>
@@ -590,10 +550,27 @@ export default function WatchPage() {
                     toast.error('Failed to load video. Please try another server.');
                     setIsPlaying(false);
                   }}
-                />
-              </div>
+                                    />
+                                </div>
             )}
           </div>
+          <div className={styles.optionsContainer}>
+                                        <button
+              className={`${styles.controlbtncontainer} ${!canGoPrevious() ? styles.disabled : ''}`}
+              onClick={goToPreviousEpisode}
+              disabled={!canGoPrevious()}
+                                        >
+              <IoPlayBack /> Previous
+                                        </button>
+
+            <button
+              className={`${styles.controlbtncontainer} ${!canGoNext() ? styles.disabled : ''}`}
+              onClick={goToNextEpisode}
+              disabled={!canGoNext()}
+            >
+              Next <IoPlayForward />
+            </button>
+                            </div>
 
           <div className={styles.serverpara}>If the current server is not working, please try switching to other servers.</div>
           <div className={styles.serverButtons}>
@@ -606,7 +583,7 @@ export default function WatchPage() {
                 <FaCloudBolt /> {server.name}
               </button>
             ))}
-          </div>
+                        </div>
 
           {/* Admin Actions */}
           {isAuthenticated && isUserAdmin(user) && (
@@ -618,8 +595,8 @@ export default function WatchPage() {
               >
                 <FaPlus /> Add
               </button>
-            </div>
-          )}
+                                            </div>
+                                        )}
 
           {/* Season and Episode Selection for TV Series */}
           {type === 'tv' && details.seasons && (
@@ -631,7 +608,7 @@ export default function WatchPage() {
                 >
                   <span>Season {selectedSeason}</span>
                   <FaChevronDown className={styles.dropdownIcon} />
-                </div>
+                                    </div>
                 {showSeasonDropdown && (
                   <div className={styles.dropdownMenu}>
                     {details.seasons
@@ -644,10 +621,10 @@ export default function WatchPage() {
                         >
                           Season {season.season_number}
                         </div>
-                      ))}
-                  </div>
-                )}
-              </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
               <div className={styles.episodeGrid}>
                 {Array.from({ length: details.seasons.find(s => s.season_number === selectedSeason)?.episode_count || 0 }, (_, i) => i + 1).map((episodeNumber) => (
@@ -657,11 +634,11 @@ export default function WatchPage() {
                     onClick={() => handleEpisodeSelect(episodeNumber)}
                   >
                     EP {episodeNumber}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
           {/* Similar Content */}
           {similarContent.length > 0 && (
@@ -669,7 +646,7 @@ export default function WatchPage() {
               <div className={styles.similarHeader}>
                 <div className={styles.similarTitleBar}></div>
                 <h3>You May Like</h3>
-              </div>
+                </div>
               <MovieSection
                 title=""
                 items={similarContent}
@@ -678,7 +655,7 @@ export default function WatchPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
+            </div>
+        </div>
+    );
 }

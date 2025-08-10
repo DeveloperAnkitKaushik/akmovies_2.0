@@ -39,10 +39,10 @@ export default function Home() {
                 // Get admin recommendations
                 const recommendationsData = await getRecommendations();
 
-                setTrendingDay(trendingDataDay.slice(0, 30));
-                setTrendingWeek(trendingDataWeek.slice(0, 30));
-                setPopularMovies(popularMoviesData.results.slice(0, 30));
-                setPopularTVShows(popularTVData.results.slice(0, 30));
+                setTrendingDay(trendingDataDay.slice(0, 10));
+                setTrendingWeek(trendingDataWeek.slice(0, 50));
+                setPopularMovies(popularMoviesData.results.slice(0, 50));
+                setPopularTVShows(popularTVData.results.slice(0, 50));
                 setRecommendations(recommendationsData);
                 setLoading(false);
             } catch (error) {
