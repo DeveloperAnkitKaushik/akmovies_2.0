@@ -100,7 +100,7 @@ export default function RootLayout({ children }) {
                 <meta name="theme-color" content="#e94560" />
                 <meta name="msapplication-TileColor" content="#e94560" />
 
-                {/* Simple Anti-Inspection Script */}
+                {/* Simple Anti-Inspection Script 
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
@@ -169,7 +169,7 @@ export default function RootLayout({ children }) {
                             }
                         })
                     }}
-                />
+                /> */}
             </head>
             <body className="text-white bg-black">
                 <AuthProvider>
