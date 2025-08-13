@@ -519,7 +519,7 @@
     color: rgb(190, 190, 190);
     font-weight: 600;
     text-align: center;
-    margin-top: 3rem;
+    margin-top: 1rem;
     margin-bottom: 1rem;
 }
 
@@ -527,7 +527,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
     margin-bottom: 2rem;
     flex-wrap: wrap;
 }
@@ -576,7 +576,8 @@
 }
 
 .trailerButton,
-.shareButton {
+.shareButton,
+.bookmarkButton {
     background: rgba(233, 69, 96, 0.2);
     color: #e94560;
     border: 1px solid rgba(233, 69, 96, 0.4);
@@ -623,6 +624,22 @@
 .shareButton:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
+}
+
+.bookmarkButton {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.bookmarkButton:hover {
+    background: rgba(233, 69, 96, 0.2);
+    border-color: rgba(233, 69, 96, 0.4);
+    transform: translateY(-2px);
+}
+
+.bookmarkButton svg {
+    color: #e94560;
 }
 
 /* Similar Section */

@@ -376,4 +376,101 @@ export const getUserHistoryForAdmin = async (userId) => {
         console.error('Error fetching user history:', error);
         return [];
     }
+};
+
+// Bookmark management functions
+export const getUserBookmarks = async (userId) => {
+    if (!userId) return [];
+
+    try {
+        const bookmarksRef = collection(db, 'users', userId, 'bookmarks');
+        const q = query(bookmarksRef, orderBy('timestamp', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const bookmarks = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            bookmarks.push({
+                id: data.id, // TMDB ID
+                firebaseId: doc.id, // Firebase document ID
+                ...data
+            });
+        });
+
+        return bookmarks;
+    } catch (error) {
+        console.error('Error fetching user bookmarks:', error);
+        return [];
+    }
+};
+
+export const addBookmark = async (userId, item) => {
+    if (!userId || !item) return false;
+
+    try {
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(item.mediaType, item.id);
+        const docRef = doc(db, 'users', userId, 'bookmarks', documentId);
+
+        // Check if already bookmarked
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            toast.info('Already bookmarked');
+            return false;
+        }
+
+        // Add bookmark
+        await setDoc(docRef, {
+            id: item.id, // TMDB ID
+            title: item.title || item.name,
+            overview: item.overview,
+            posterPath: item.posterPath || item.poster_path,
+            backdropPath: item.backdropPath || item.backdrop_path,
+            mediaType: item.mediaType,
+            releaseDate: item.releaseDate || item.release_date || item.first_air_date,
+            voteAverage: item.voteAverage || item.vote_average,
+            timestamp: serverTimestamp()
+        });
+
+        toast.success('Added to bookmarks');
+        return true;
+    } catch (error) {
+        console.error('Error adding bookmark:', error);
+        toast.error('Failed to add bookmark');
+        return false;
+    }
+};
+
+export const removeBookmark = async (userId, itemId, mediaType) => {
+    if (!userId || !itemId || !mediaType) return false;
+
+    try {
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(mediaType, itemId);
+        const docRef = doc(db, 'users', userId, 'bookmarks', documentId);
+
+        await deleteDoc(docRef);
+        toast.success('Removed from bookmarks');
+        return true;
+    } catch (error) {
+        console.error('Error removing bookmark:', error);
+        toast.error('Failed to remove bookmark');
+        return false;
+    }
+};
+
+export const isBookmarked = async (userId, itemId, mediaType) => {
+    if (!userId || !itemId || !mediaType) return false;
+
+    try {
+        // Generate the proper Firebase document ID using the format {type}_{id}
+        const documentId = generateFirebaseId(mediaType, itemId);
+        const docRef = doc(db, 'users', userId, 'bookmarks', documentId);
+
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists();
+    } catch (error) {
+        console.error('Error checking bookmark status:', error);
+        return false;
+    }
 }; 

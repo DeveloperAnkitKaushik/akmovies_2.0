@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import HeroSlider from '@/components/HeroSlider';
 import MovieSection from '@/components/MovieSection';
 import { getTrending, getPopularMovies, getPopularTVShows } from '@/utils/tmdb';
-import { getUserHistory, removeFromHistory, getRecommendations, deleteRecommendation } from '@/utils/firestore';
+import { getUserHistory, removeFromHistory, getRecommendations, deleteRecommendation, getUserBookmarks, removeBookmark } from '@/utils/firestore';
 import { isUserAdmin } from '@/utils/admin';
 import { toast } from 'react-hot-toast';
 import styles from './page.module.css';
@@ -17,6 +17,7 @@ export default function Home() {
     const [popularTVShows, setPopularTVShows] = useState([]);
     const [continueWatching, setContinueWatching] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
+    const [bookmarks, setBookmarks] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user, isAuthenticated } = useAuth();
 
@@ -54,22 +55,52 @@ export default function Home() {
         fetchData();
     }, []);
 
-    // Fetch continue watching when user is authenticated
+    // Function to refresh bookmarks
+    const refreshBookmarks = async () => {
+        if (isAuthenticated && user?.uid) {
+            try {
+                const userBookmarks = await getUserBookmarks(user.uid);
+                setBookmarks(userBookmarks);
+            } catch (error) {
+                console.error('Error fetching bookmarks:', error);
+            }
+        }
+    };
+
+    // Fetch continue watching and bookmarks when user is authenticated
     useEffect(() => {
-        const fetchContinueWatching = async () => {
+        const fetchUserData = async () => {
             if (isAuthenticated && user?.uid) {
                 try {
+                    // Fetch continue watching
                     const history = await getUserHistory(user.uid);
                     setContinueWatching(history);
+
+                    // Fetch bookmarks
+                    await refreshBookmarks();
                 } catch (error) {
-                    console.error('Error fetching continue watching:', error);
+                    console.error('Error fetching user data:', error);
                 }
             } else {
                 setContinueWatching([]);
+                setBookmarks([]);
             }
         };
 
-        fetchContinueWatching();
+        fetchUserData();
+    }, [isAuthenticated, user?.uid]);
+
+    // Listen for global bookmark changes
+    useEffect(() => {
+        const handleBookmarkChange = () => {
+            refreshBookmarks();
+        };
+
+        window.addEventListener('bookmarkChanged', handleBookmarkChange);
+
+        return () => {
+            window.removeEventListener('bookmarkChanged', handleBookmarkChange);
+        };
     }, [isAuthenticated, user?.uid]);
 
     // Handle remove from continue watching
@@ -114,6 +145,25 @@ export default function Home() {
         }
     };
 
+    // Handle remove from bookmarks
+    const handleRemoveFromBookmarks = async (item) => {
+        if (!isAuthenticated || !user?.uid) return;
+
+        try {
+            await removeBookmark(user.uid, item.id, item.mediaType);
+
+            // Update local state
+            setBookmarks(prev => prev.filter(bookmark =>
+                !(bookmark.id === item.id && bookmark.mediaType === item.mediaType)
+            ));
+
+            toast.success('Removed from bookmarks');
+        } catch (error) {
+            console.error('Error removing from bookmarks:', error);
+            toast.error('Failed to remove from bookmarks');
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.loadingContainer}>
@@ -127,7 +177,7 @@ export default function Home() {
     return (
         <div className={styles.container}>
             {/* Hero Slider */}
-            <HeroSlider movies={trendingDay.slice(0, 8)} />
+            <HeroSlider movies={trendingDay.slice(0, 8)} onBookmarkChange={refreshBookmarks} />
 
             {/* Movie Sections */}
             <div className={styles.sectionsContainer}>
@@ -149,6 +199,16 @@ export default function Home() {
                             items={recommendations}
                             type="recommendations"
                             onRemove={handleRemoveFromRecommendations}
+                        />
+                    )}
+                    {/* Bookmarks Section - Only show if user is authenticated and has bookmarks */}
+                    {isAuthenticated && bookmarks.length > 0 && (
+                        <MovieSection
+                            title="My Bookmarks"
+                            items={bookmarks}
+                            type="bookmarks"
+                            onRemove={handleRemoveFromBookmarks}
+                            showAll={true}
                         />
                     )}
                     <MovieSection title="Popular Movies" items={popularMovies} />

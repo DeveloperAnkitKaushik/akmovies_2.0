@@ -8,13 +8,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import MovieCard from '@/components/MovieCard';
 import MovieSection from '@/components/MovieSection';
 import { getMovieDetails, getTVShowDetails, getImageUrl, getTitleLogo } from '@/utils/tmdb';
-import { addToHistory, getServers, getContinueWatchingItem, updateContinueWatchingProgress, addRecommendation } from '@/utils/firestore';
+import { addToHistory, getServers, getContinueWatchingItem, updateContinueWatchingProgress, addRecommendation, addBookmark, removeBookmark, isBookmarked } from '@/utils/firestore';
 import styles from './page.module.css';
 import { IoIosPlayCircle } from "react-icons/io";
 import { IoPlayForward } from "react-icons/io5";
 import { IoPlayBack } from "react-icons/io5";
 import { FaCloudBolt } from "react-icons/fa6";
-import { FaPlus, FaShare, FaYoutube } from "react-icons/fa";
+import { FaPlus, FaShare, FaYoutube, FaBookmark, FaRegBookmark } from "react-icons/fa";
 import { isUserAdmin } from '@/utils/admin';
 
 export default function WatchPage() {
@@ -38,10 +38,11 @@ export default function WatchPage() {
   const [titleLogo, setTitleLogo] = useState(null);
   const [showTrailer, setShowTrailer] = useState(false);
   const [trailerKey, setTrailerKey] = useState(null);
+  const [bookmarked, setBookmarked] = useState(false);
 
 
 
-  // Fetch title logo
+  // Fetch title logo and check bookmark status
   useEffect(() => {
     const fetchTitleLogo = async () => {
       if (!actualId || !type) return;
@@ -56,8 +57,20 @@ export default function WatchPage() {
       }
     };
 
+    const checkBookmarkStatus = async () => {
+      if (!isAuthenticated || !user?.uid || !actualId || !type) return;
+
+      try {
+        const bookmarkStatus = await isBookmarked(user.uid, parseInt(actualId), type);
+        setBookmarked(bookmarkStatus);
+      } catch (error) {
+        console.error('Error checking bookmark status:', error);
+      }
+    };
+
     fetchTitleLogo();
-  }, [actualId, type]);
+    checkBookmarkStatus();
+  }, [actualId, type, isAuthenticated, user?.uid]);
 
   useEffect(() => {
     // We only want to update progress for logged-in users watching a TV show
@@ -384,6 +397,50 @@ export default function WatchPage() {
     setShowTrailer(false);
   };
 
+  // Handle bookmark functionality
+  const handleBookmarkClick = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please login first to bookmark content');
+      return;
+    }
+
+    if (!details) return;
+
+    try {
+      if (bookmarked) {
+        // Remove bookmark
+        const success = await removeBookmark(user.uid, parseInt(actualId), type);
+        if (success) {
+          setBookmarked(false);
+          // Trigger global bookmark refresh
+          window.dispatchEvent(new CustomEvent('bookmarkChanged'));
+        }
+      } else {
+        // Add bookmark
+        const bookmarkData = {
+          id: parseInt(actualId),
+          title: details.title || details.name,
+          overview: details.overview,
+          posterPath: details.poster_path,
+          backdropPath: details.backdrop_path,
+          mediaType: type,
+          releaseDate: details.release_date || details.first_air_date,
+          voteAverage: details.vote_average
+        };
+
+        const success = await addBookmark(user.uid, bookmarkData);
+        if (success) {
+          setBookmarked(true);
+          // Trigger global bookmark refresh
+          window.dispatchEvent(new CustomEvent('bookmarkChanged'));
+        }
+      }
+    } catch (error) {
+      console.error('Error handling bookmark:', error);
+      toast.error('Failed to update bookmark');
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -513,6 +570,13 @@ export default function WatchPage() {
                   disabled={!trailerKey}
                 >
                   <FaYoutube /> {trailerKey ? 'Watch Trailer' : 'No Trailer'}
+                </button>
+                <button
+                  className={styles.bookmarkButton}
+                  onClick={handleBookmarkClick}
+                >
+                  {bookmarked ? <FaBookmark /> : <FaRegBookmark />}
+                  {bookmarked ? 'Bookmarked' : 'Bookmark'}
                 </button>
                 <button
                   className={styles.shareButton}
