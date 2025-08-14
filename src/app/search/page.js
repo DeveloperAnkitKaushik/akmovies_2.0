@@ -5,13 +5,16 @@ import { useSearchParams } from 'next/navigation';
 import Topbar from '@/components/Topbar';
 import VerticalResults from '@/components/VerticalResults';
 import { searchMulti } from '@/utils/tmdb';
+import { searchAnime, convertAnimeToMovieCard } from '@/utils/anilist';
 import styles from './page.module.css';
 
 export default function SearchPage() {
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get('q') || '';
+    const initialType = searchParams.get('type') === 'anime' ? 'anime' : 'movie';
 
     const [query, setQuery] = useState(initialQuery);
+    const [searchType, setSearchType] = useState(initialType); // 'movie' | 'anime'
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -19,12 +22,13 @@ export default function SearchPage() {
 
     // Dynamic title based on search query
     useEffect(() => {
+        const scope = searchType === 'anime' ? 'Anime' : 'Movies & TV Shows';
         if (query.trim()) {
-            document.title = `Search: "${query}" | AKMovies`;
+            document.title = `Search ${scope}: "${query}" | AKMovies`;
         } else {
-            document.title = 'Search Movies & TV Shows | AKMovies';
+            document.title = `Search ${scope} | AKMovies`;
         }
-    }, [query]);
+    }, [query, searchType]);
 
     const performSearch = async (searchQuery, page = 1) => {
         if (!searchQuery.trim()) {
@@ -34,16 +38,27 @@ export default function SearchPage() {
 
         try {
             setLoading(true);
-            const data = await searchMulti(searchQuery, page);
-
-            if (page === 1) {
-                setResults(data.results);
+            if (searchType === 'anime') {
+                const pageData = await searchAnime(searchQuery, page, 20);
+                const items = (pageData?.media || []).map(convertAnimeToMovieCard);
+                if (page === 1) {
+                    setResults(items);
+                } else {
+                    setResults(prev => [...prev, ...items]);
+                }
+                setTotalPages(pageData?.pageInfo?.lastPage || 1);
+                setCurrentPage(pageData?.pageInfo?.currentPage || page);
             } else {
-                setResults(prev => [...prev, ...data.results]);
+                const data = await searchMulti(searchQuery, page);
+                const filtered = (data.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv');
+                if (page === 1) {
+                    setResults(filtered);
+                } else {
+                    setResults(prev => [...prev, ...filtered]);
+                }
+                setTotalPages(data.totalPages || data.total_pages || 1);
+                setCurrentPage(page);
             }
-
-            setTotalPages(data.totalPages);
-            setCurrentPage(page);
         } catch (error) {
             console.error('Search error:', error);
         } finally {
@@ -56,17 +71,27 @@ export default function SearchPage() {
         const timeoutId = setTimeout(() => {
             if (query.trim().length > 2) {
                 performSearch(query.trim());
-                // Update URL with search query
-                window.history.pushState({}, '', `/search?q=${encodeURIComponent(query.trim())}`);
+                // Update URL with query and type
+                const url = `/search?type=${searchType}&q=${encodeURIComponent(query.trim())}`;
+                window.history.pushState({}, '', url);
             } else if (query.trim().length === 0) {
                 setResults([]);
-                // Clear URL when query is empty
-                window.history.pushState({}, '', '/search');
+                // Clear URL when query is empty but preserve type
+                const url = `/search?type=${searchType}`;
+                window.history.pushState({}, '', url);
             }
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [query]);
+    }, [query, searchType]);
+
+    // Trigger search when type changes and query is present
+    useEffect(() => {
+        if (query.trim().length > 2) {
+            performSearch(query.trim(), 1);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchType]);
 
     useEffect(() => {
         if (initialQuery) {
@@ -88,18 +113,37 @@ export default function SearchPage() {
                     {/* Search Form */}
                     <div className={styles.searchFormContainer}>
                         <form className={styles.searchForm} onSubmit={(e) => e.preventDefault()}>
-                            <div className={styles.searchInputContainer}>
-                                <input
-                                    type="text"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search for movies, TV shows..."
-                                    className={styles.searchInput}
-                                    autoFocus
-                                />
-                                {loading && (
-                                    <div className={styles.searchSpinner}></div>
-                                )}
+                            <div className={styles.searchBarRow}>
+                                <div className={styles.searchInputContainer}>
+                                    <input
+                                        type="text"
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        placeholder={searchType === 'anime' ? 'Search for anime...' : 'Search for movies, TV shows...'}
+                                        className={styles.searchInput}
+                                        autoFocus
+                                    />
+                                    {loading && (
+                                        <div className={styles.searchSpinner}></div>
+                                    )}
+                                </div>
+                                <div className={styles.typeToggle} aria-label="Search type toggle">
+                                    <span className={`${styles.toggleThumb} ${searchType === 'movie' ? styles.left : styles.right}`}></span>
+                                    <button
+                                        type="button"
+                                        className={`${styles.toggleOption} ${searchType === 'movie' ? styles.active : ''}`}
+                                        onClick={() => setSearchType('movie')}
+                                    >
+                                        Movies
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${styles.toggleOption} ${searchType === 'anime' ? styles.active : ''}`}
+                                        onClick={() => setSearchType('anime')}
+                                    >
+                                        Anime
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -109,7 +153,7 @@ export default function SearchPage() {
                         <div className={styles.resultsContainer}>
                             <div className={styles.resultsHeader}>
                                 <h2 className={styles.resultsTitle}>
-                                    Search results for "{query}"
+                                    {searchType === 'anime' ? 'Anime' : 'Movies & TV'} results for "{query}"
                                 </h2>
                                 {results.length > 0 && (
                                     <span className={styles.resultsCount}>

@@ -19,22 +19,26 @@ import {
     getTVShowsByGenre,
     discoverContent
 } from '@/utils/tmdb';
-import { FaFilter, FaChevronDown, FaFilm, FaTv } from 'react-icons/fa';
+import { getTrendingAnime, getPopularAnime, getAnimeGenres, getAnimeStudios, convertAnimeToMovieCard } from '@/utils/anilist';
+import { FaFilter, FaChevronDown, FaFilm, FaTv, FaPlay } from 'react-icons/fa';
 import styles from './page.module.css';
 
 export default function BrowsePage() {
     const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState('popular');
     const [selectedGenre, setSelectedGenre] = useState(null);
-    const [mediaType, setMediaType] = useState('movie'); // 'movie' or 'tv'
+    const [mediaType, setMediaType] = useState('movie'); // 'movie', 'tv', or 'anime'
     const [content, setContent] = useState([]);
     const [movieGenres, setMovieGenres] = useState([]);
     const [tvGenres, setTvGenres] = useState([]);
+    const [animeGenres, setAnimeGenres] = useState([]);
+    const [animeStudios, setAnimeStudios] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(null);
+    const [selectedStudio, setSelectedStudio] = useState(null);
 
     const movieTabs = [
         { id: 'popular', label: 'Popular', fetch: getPopularMovies },
@@ -48,6 +52,11 @@ export default function BrowsePage() {
         { id: 'top_rated', label: 'Top Rated', fetch: getTopRatedTVShows },
         { id: 'on_the_air', label: 'On The Air', fetch: getOnTheAirTVShows },
         { id: 'airing_today', label: 'Airing Today', fetch: getAiringTodayTVShows },
+    ];
+
+    const animeTabs = [
+        { id: 'trending', label: 'Trending', fetch: getTrendingAnime },
+        { id: 'popular', label: 'Popular', fetch: getPopularAnime },
     ];
 
     const countryOptions = [
@@ -69,42 +78,86 @@ export default function BrowsePage() {
         { code: 'US', name: 'United States' },
     ];
 
-    const currentTabs = mediaType === 'movie' ? movieTabs : tvTabs;
-    const currentGenres = mediaType === 'movie' ? movieGenres : tvGenres;
+    const currentTabs = mediaType === 'movie' ? movieTabs : mediaType === 'tv' ? tvTabs : animeTabs;
+    const currentGenres = mediaType === 'movie' ? movieGenres : mediaType === 'tv' ? tvGenres : animeGenres;
 
     // Handle URL query parameters
-    // The new, updated useEffect for ALL URL params
     useEffect(() => {
         const urlGenre = searchParams.get('genre');
         const urlType = searchParams.get('type');
-        const urlCountry = searchParams.get('country'); // <-- Added
+        const urlCountry = searchParams.get('country');
+        const urlStudio = searchParams.get('studio');
+        const urlId = searchParams.get('id');
 
-        if (urlType && (urlType === 'movie' || urlType === 'tv')) {
+        if (urlType && (urlType === 'movie' || urlType === 'tv' || urlType === 'anime')) {
             setMediaType(urlType);
         }
 
         // Handle country from URL
-        if (urlCountry) { // <-- Added
+        if (urlCountry) {
             setSelectedCountry(urlCountry);
-            setActiveTab(''); // Prioritize specific filters over default tabs
+            setActiveTab('');
+        }
+
+        // Handle studio from URL (for anime)
+        if (urlStudio) {
+            setSelectedStudio(urlStudio);
+            setActiveTab('');
         }
 
         // Handle genre from URL
         if (urlGenre) {
-            const genreId = parseInt(urlGenre);
-            setSelectedGenre(genreId);
+            if (urlType === 'anime') {
+                // For anime, genre is a string name, not an ID
+                setSelectedGenre(urlGenre);
+            } else {
+                const genreId = parseInt(urlGenre);
+                setSelectedGenre(genreId);
+            }
+            setActiveTab('');
+        }
+
+        // Handle ID from URL (for anime)
+        if (urlId && urlType === 'anime') {
+            // This could be used to show specific anime or related content
             setActiveTab('');
         }
     }, [searchParams]);
 
+    const getActiveGenreName = () => {
+        if (!selectedGenre) return '';
+        if (mediaType === 'anime') {
+            return selectedGenre; // For anime, genre is already a string
+        }
+        const genre = currentGenres.find(g => g.id === selectedGenre);
+        return genre ? genre.name : '';
+    };
+
+    const getCurrentFilterLabel = () => {
+        const categoryLabel = currentTabs.find(t => t.id === activeTab)?.label || 'Popular';
+        const genreLabel = selectedGenre ? getActiveGenreName() : '';
+        const studioLabel = selectedStudio ? `Studio: ${selectedStudio}` : '';
+
+        if (selectedGenre && activeTab) {
+            return `${categoryLabel} ${genreLabel}`;
+        } else if (selectedGenre) {
+            return genreLabel;
+        } else if (selectedStudio) {
+            return studioLabel;
+        } else {
+            return categoryLabel;
+        }
+    };
+
     // Dynamic title based on current filter and content
     useEffect(() => {
         if (loading) {
-            document.title = `Loading ${mediaType === 'movie' ? 'Movies' : 'TV Series'} | AKMovies`;
+            const contentType = mediaType === 'movie' ? 'Movies' : mediaType === 'tv' ? 'TV Series' : 'Anime';
+            document.title = `Loading ${contentType} | AKMovies`;
         } else {
-            const contentType = mediaType === 'movie' ? 'Movies' : 'TV Series';
+            const contentType = mediaType === 'movie' ? 'Movies' : mediaType === 'tv' ? 'TV Series' : 'Anime';
             const filterName = selectedGenre ? getActiveGenreName() : getCurrentFilterLabel();
-            const contentCount = content.length;
+            const contentCount = content?.length || 0;
 
             if (contentCount > 0) {
                 document.title = `${filterName} ${contentType} (${contentCount}) | AKMovies`;
@@ -112,67 +165,122 @@ export default function BrowsePage() {
                 document.title = `${filterName} ${contentType} | AKMovies`;
             }
         }
-    }, [loading, mediaType, selectedGenre, content.length, activeTab]);
+    }, [loading, mediaType, selectedGenre, content, activeTab, currentGenres, currentTabs, selectedStudio]);
 
     useEffect(() => {
         const fetchGenres = async () => {
             try {
-                const [movieGenresData, tvGenresData] = await Promise.all([
-                    getMovieGenres(),
-                    getTVGenres()
-                ]);
-                setMovieGenres(movieGenresData);
-                setTvGenres(tvGenresData);
+                if (mediaType === 'anime') {
+                    const [animeGenresData, animeStudiosData] = await Promise.all([
+                        getAnimeGenres(),
+                        getAnimeStudios()
+                    ]);
+                    setAnimeGenres(animeGenresData);
+                    setAnimeStudios(animeStudiosData);
+                } else {
+                    const [movieGenresData, tvGenresData] = await Promise.all([
+                        getMovieGenres(),
+                        getTVGenres()
+                    ]);
+                    setMovieGenres(movieGenresData);
+                    setTvGenres(tvGenresData);
+                }
             } catch (error) {
                 console.error('Error fetching genres:', error);
             }
         };
         fetchGenres();
-    }, []);
+    }, [mediaType]);
 
-    const fetchContent = async (tab, genre = null, country = null, page = 1) => {
+    const fetchContent = async (tab, genre = null, country = null, studio = null, page = 1) => {
         try {
             setLoading(true);
             let data;
 
-            // Use the new, powerful discover endpoint
-            const params = { page };
-            if (genre) params.with_genres = genre;
-            if (country) params.with_origin_country = country;
+            if (mediaType === 'anime') {
+                // Handle anime content fetching
+                if (tab === 'trending') {
+                    data = await getTrendingAnime(page, 20);
+                } else if (tab === 'popular') {
+                    data = await getPopularAnime(page, 20);
+                } else {
+                    // Default to popular if no tab specified
+                    data = await getPopularAnime(page, 20);
+                }
 
-            // Determine how to sort the results based on the active tab
-            if (tab === 'top_rated') {
-                params.sort_by = 'vote_average.desc';
-                params['vote_count.gte'] = 200; // Ensures top-rated results are meaningful
-            } else if (mediaType === 'movie' && tab === 'now_playing') {
-                // Note: Now Playing/Upcoming don't work with country/genre filters,
-                // so we must choose one. The tab is more specific.
-                data = await getNowPlayingMovies(page);
-            } else if (mediaType === 'movie' && tab === 'upcoming') {
-                data = await getUpcomingMovies(page);
-            } else if (mediaType === 'tv' && tab === 'on_the_air') {
-                data = await getOnTheAirTVShows(page);
-            } else if (mediaType === 'tv' && tab === 'airing_today') {
-                data = await getAiringTodayTVShows(page);
-            }
-            else {
-                // Default sort for 'popular' or when mixing filters
-                params.sort_by = 'popularity.desc';
-            }
+                console.log('Raw anime data:', data); // Debug log
 
-            // If data hasn't been fetched by a specific tab function, use discover
-            if (!data) {
-                data = await discoverContent(mediaType, params);
-            }
+                // For anime, we need to filter by genre and studio if specified
+                if (data && data.media) {
+                    let filteredResults = data.media;
 
-            if (page === 1) {
-                setContent(data.results);
+                    console.log('Before filtering:', filteredResults.length, 'anime'); // Debug log
+
+                    if (genre) {
+                        filteredResults = filteredResults.filter(anime =>
+                            anime.genres && anime.genres.includes(genre)
+                        );
+                        console.log('After genre filtering:', filteredResults.length, 'anime'); // Debug log
+                    }
+
+                    if (studio) {
+                        filteredResults = filteredResults.filter(anime =>
+                            anime.studios && anime.studios.nodes &&
+                            anime.studios.nodes.some(s => s.name === studio)
+                        );
+                        console.log('After studio filtering:', filteredResults.length, 'anime'); // Debug log
+                    }
+
+                    // Convert anime data to MovieCard format and match expected structure
+                    data = {
+                        results: filteredResults.map(anime => convertAnimeToMovieCard(anime)),
+                        totalPages: data.pageInfo ? data.pageInfo.lastPage : Math.ceil(filteredResults.length / 20),
+                        currentPage: data.pageInfo ? data.pageInfo.currentPage : page
+                    };
+                }
             } else {
-                setContent(prev => [...prev, ...data.results]);
+                // Handle movie/TV content fetching (existing logic)
+                const params = { page };
+                if (genre) params.with_genres = genre;
+                if (country) params.with_origin_country = country;
+
+                if (tab === 'top_rated') {
+                    params.sort_by = 'vote_average.desc';
+                    params['vote_count.gte'] = 200;
+                } else if (mediaType === 'movie' && tab === 'now_playing') {
+                    data = await getNowPlayingMovies(page);
+                } else if (mediaType === 'movie' && tab === 'upcoming') {
+                    data = await getUpcomingMovies(page);
+                } else if (mediaType === 'tv' && tab === 'on_the_air') {
+                    data = await getOnTheAirTVShows(page);
+                } else if (mediaType === 'tv' && tab === 'airing_today') {
+                    data = await getAiringTodayTVShows(page);
+                } else {
+                    params.sort_by = 'popularity.desc';
+                }
+
+                if (!data) {
+                    data = await discoverContent(mediaType, params);
+                }
             }
 
-            setTotalPages(data.totalPages);
-            setCurrentPage(page);
+            if (data && data.results) {
+                if (page === 1) {
+                    setContent(data.results);
+                } else {
+                    setContent(prev => [...prev, ...data.results]);
+                }
+
+                setTotalPages(data.totalPages || 1);
+                setCurrentPage(page);
+            } else {
+                // Handle case where no data is returned
+                if (page === 1) {
+                    setContent([]);
+                }
+                setTotalPages(1);
+                setCurrentPage(page);
+            }
         } catch (error) {
             console.error('Error fetching content:', error);
         } finally {
@@ -181,61 +289,45 @@ export default function BrowsePage() {
     };
 
     useEffect(() => {
-        if (activeTab || selectedGenre || selectedCountry) {
-            fetchContent(activeTab, selectedGenre, selectedCountry);
+        if (activeTab || selectedGenre || selectedCountry || selectedStudio) {
+            fetchContent(activeTab, selectedGenre, selectedCountry, selectedStudio);
         } else {
             setActiveTab('popular');
         }
-    }, [activeTab, selectedGenre, selectedCountry, mediaType]);
+    }, [activeTab, selectedGenre, selectedCountry, selectedStudio, mediaType]);
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
-        // Don't clear selectedGenre - allow both category and genre to be selected
         setCurrentPage(1);
     };
 
-    const handleGenreChange = (genreId) => {
-        setSelectedGenre(genreId);
-        // Don't clear activeTab - allow both category and genre to be selected
+    const handleGenreChange = (genre) => {
+        setSelectedGenre(genre);
         setCurrentPage(1);
     };
 
     const handleMediaTypeChange = (type) => {
         setMediaType(type);
-        // Don't reset activeTab and selectedGenre - let the useEffect handle it
+        setSelectedGenre(null);
+        setSelectedCountry(null);
+        setSelectedStudio(null);
+        setActiveTab('popular');
+        setCurrentPage(1);
+    };
+
+    const handleStudioChange = (studio) => {
+        setSelectedStudio(studio);
         setCurrentPage(1);
     };
 
     const loadMore = () => {
         if (currentPage < totalPages && !loading) {
-            fetchContent(activeTab, selectedGenre, selectedCountry, currentPage + 1);
-        }
-    };
-
-    const getActiveGenreName = () => {
-        if (!selectedGenre) return '';
-        const genre = currentGenres.find(g => g.id === selectedGenre);
-        return genre ? genre.name : '';
-    };
-
-    const getCurrentFilterLabel = () => {
-        const categoryLabel = currentTabs.find(t => t.id === activeTab)?.label || 'Popular';
-        const genreLabel = selectedGenre ? getActiveGenreName() : '';
-
-        if (selectedGenre && activeTab) {
-            // Both category and genre are selected
-            return `${categoryLabel} ${genreLabel}`;
-        } else if (selectedGenre) {
-            // Only genre is selected
-            return genreLabel;
-        } else {
-            // Only category is selected
-            return categoryLabel;
+            fetchContent(activeTab, selectedGenre, selectedCountry, selectedStudio, currentPage + 1);
         }
     };
 
     const getContentTypeLabel = () => {
-        return mediaType === 'movie' ? 'Movies' : 'TV Series';
+        return mediaType === 'movie' ? 'Movies' : mediaType === 'tv' ? 'TV Series' : 'Anime';
     };
 
     const getSectionTitle = () => {
@@ -244,20 +336,17 @@ export default function BrowsePage() {
         const contentTypeLabel = getContentTypeLabel();
 
         if (selectedGenre && activeTab) {
-            // Both category and genre are selected
             return `${categoryLabel} ${genreLabel} ${contentTypeLabel}`;
         } else if (selectedGenre) {
-            // Only genre is selected
             return `${genreLabel} ${contentTypeLabel}`;
         } else {
-            // Only category is selected
             return `${categoryLabel} ${contentTypeLabel}`;
         }
     };
 
     const handleCountryChange = (countryCode) => {
         setSelectedCountry(countryCode);
-        setCurrentPage(1); // Reset to the first page on a new filter
+        setCurrentPage(1);
     };
 
     return (
@@ -298,6 +387,13 @@ export default function BrowsePage() {
                                                 <FaTv />
                                                 TV Series
                                             </button>
+                                            <button
+                                                onClick={() => handleMediaTypeChange('anime')}
+                                                className={`${styles.filterOption} ${mediaType === 'anime' ? styles.active : ''}`}
+                                            >
+                                                <FaPlay />
+                                                Anime
+                                            </button>
                                         </div>
                                     </div>
 
@@ -317,26 +413,53 @@ export default function BrowsePage() {
                                         </div>
                                     </div>
 
-                                    <div className={styles.filterSection}>
-                                        <h3 className={styles.filterSectionTitle}>Origin Country</h3>
-                                        <div className={styles.filterOptions}>
-                                            <button
-                                                onClick={() => handleCountryChange(null)}
-                                                className={`${styles.filterOption} ${!selectedCountry ? styles.active : ''}`}
-                                            >
-                                                All Countries
-                                            </button>
-                                            {countryOptions.map((country) => (
+                                    {/* Origin Country (only for movies and TV) */}
+                                    {mediaType !== 'anime' && (
+                                        <div className={styles.filterSection}>
+                                            <h3 className={styles.filterSectionTitle}>Origin Country</h3>
+                                            <div className={styles.filterOptions}>
                                                 <button
-                                                    key={country.code}
-                                                    onClick={() => handleCountryChange(country.code)}
-                                                    className={`${styles.filterOption} ${selectedCountry === country.code ? styles.active : ''}`}
+                                                    onClick={() => handleCountryChange(null)}
+                                                    className={`${styles.filterOption} ${!selectedCountry ? styles.active : ''}`}
                                                 >
-                                                    {country.name}
+                                                    All Countries
                                                 </button>
-                                            ))}
+                                                {countryOptions.map((country) => (
+                                                    <button
+                                                        key={country.code}
+                                                        onClick={() => handleCountryChange(country.code)}
+                                                        className={`${styles.filterOption} ${selectedCountry === country.code ? styles.active : ''}`}
+                                                    >
+                                                        {country.name}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
+
+                                    {/* Studio Filter (only for anime) */}
+                                    {mediaType === 'anime' && (
+                                        <div className={styles.filterSection}>
+                                            <h3 className={styles.filterSectionTitle}>Studio</h3>
+                                            <div className={styles.filterOptions}>
+                                                <button
+                                                    onClick={() => handleStudioChange(null)}
+                                                    className={`${styles.filterOption} ${!selectedStudio ? styles.active : ''}`}
+                                                >
+                                                    All Studios
+                                                </button>
+                                                {animeStudios.map((studio) => (
+                                                    <button
+                                                        key={studio}
+                                                        onClick={() => handleStudioChange(studio)}
+                                                        className={`${styles.filterOption} ${selectedStudio === studio ? styles.active : ''}`}
+                                                    >
+                                                        {studio}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Genre Filter */}
                                     <div className={styles.filterSection}>
@@ -350,11 +473,11 @@ export default function BrowsePage() {
                                             </button>
                                             {currentGenres.map((genre) => (
                                                 <button
-                                                    key={genre.id}
-                                                    onClick={() => handleGenreChange(genre.id)}
-                                                    className={`${styles.filterOption} ${selectedGenre === genre.id ? styles.active : ''}`}
+                                                    key={mediaType === 'anime' ? genre : genre.id}
+                                                    onClick={() => handleGenreChange(mediaType === 'anime' ? genre : genre.id)}
+                                                    className={`${styles.filterOption} ${selectedGenre === (mediaType === 'anime' ? genre : genre.id) ? styles.active : ''}`}
                                                 >
-                                                    {genre.name}
+                                                    {mediaType === 'anime' ? genre : genre.name}
                                                 </button>
                                             ))}
                                         </div>
@@ -369,7 +492,7 @@ export default function BrowsePage() {
                         <div className={styles.loadingContainer}>
                             <div className={styles.loadingContent}>
                                 <div className={styles.spinner}></div>
-                                <p className={styles.loadingText}>Loading {mediaType === 'movie' ? 'movies' : 'series'}...</p>
+                                <p className={styles.loadingText}>Loading {getContentTypeLabel().toLowerCase()}...</p>
                             </div>
                         </div>
                     ) : content.length > 0 ? (
@@ -379,7 +502,7 @@ export default function BrowsePage() {
                                 loading={loading && content.length > 0}
                                 hasMore={currentPage < totalPages}
                                 onLoadMore={loadMore}
-                                emptyMessage={`No ${mediaType === 'movie' ? 'movies' : 'series'} found. Try selecting a different category or genre.`}
+                                emptyMessage={`No ${getContentTypeLabel().toLowerCase()} found. Try selecting a different category or genre.`}
                                 gridCols={6}
                                 showLoadMore={true}
                             />
@@ -391,7 +514,7 @@ export default function BrowsePage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V2a1 1 0 011-1h2a1 1 0 011 1v2m0 0v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v14z" />
                                 </svg>
                             </div>
-                            <h3 className={styles.emptyTitle}>No {mediaType === 'movie' ? 'movies' : 'series'} found</h3>
+                            <h3 className={styles.emptyTitle}>No {getContentTypeLabel().toLowerCase()} found</h3>
                             <p className={styles.emptyText}>
                                 Try selecting a different category or genre
                             </p>

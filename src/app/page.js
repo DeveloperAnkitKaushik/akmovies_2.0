@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import HeroSlider from '@/components/HeroSlider';
 import MovieSection from '@/components/MovieSection';
 import { getTrending, getPopularMovies, getPopularTVShows } from '@/utils/tmdb';
+import { getTrendingAnime, getPopularAnime, convertAnimeToMovieCard } from '@/utils/anilist';
 import { getUserHistory, removeFromHistory, getRecommendations, deleteRecommendation, getUserBookmarks, removeBookmark } from '@/utils/firestore';
 import { isUserAdmin } from '@/utils/admin';
 import { toast } from 'react-hot-toast';
@@ -18,6 +19,8 @@ export default function Home() {
     const [continueWatching, setContinueWatching] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
     const [bookmarks, setBookmarks] = useState([]);
+    const [trendingAnime, setTrendingAnime] = useState([]);
+    const [popularAnime, setPopularAnime] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user, isAuthenticated } = useAuth();
 
@@ -37,6 +40,12 @@ export default function Home() {
                 // Get popular TV shows
                 const popularTVData = await getPopularTVShows(1);
 
+                // Get trending and popular anime
+                const [trendingAnimeData, popularAnimeData] = await Promise.all([
+                    getTrendingAnime(1, 20),
+                    getPopularAnime(1, 20)
+                ]);
+
                 // Get admin recommendations
                 const recommendationsData = await getRecommendations();
 
@@ -44,6 +53,17 @@ export default function Home() {
                 setTrendingWeek(trendingDataWeek.slice(0, 50));
                 setPopularMovies(popularMoviesData.results.slice(0, 50));
                 setPopularTVShows(popularTVData.results.slice(0, 50));
+
+                // Set anime data
+                if (trendingAnimeData?.media) {
+                    const convertedTrendingAnime = trendingAnimeData.media.map(anime => convertAnimeToMovieCard(anime));
+                    setTrendingAnime(convertedTrendingAnime);
+                }
+                if (popularAnimeData?.media) {
+                    const convertedPopularAnime = popularAnimeData.media.map(anime => convertAnimeToMovieCard(anime));
+                    setPopularAnime(convertedPopularAnime);
+                }
+
                 setRecommendations(recommendationsData);
                 setLoading(false);
             } catch (error) {
@@ -183,6 +203,15 @@ export default function Home() {
             <div className={styles.sectionsContainer}>
                 <div className="main-container">
                     <MovieSection title="Trending Now" items={trendingWeek} isLarge={true} />
+                    {/* Trending Anime Section */}
+                    {trendingAnime.length > 0 && (
+                        <MovieSection
+                            title="Trending Now Anime"
+                            items={trendingAnime}
+                            type="anime"
+                            isLarge={false}
+                        />
+                    )}
                     {/* Continue Watching Section - Only show if user is authenticated and has history */}
                     {isAuthenticated && continueWatching.length > 0 && (
                         <MovieSection
@@ -212,6 +241,15 @@ export default function Home() {
                         />
                     )}
                     <MovieSection title="Popular Movies" items={popularMovies} />
+                    {/* Popular Anime Section */}
+                    {popularAnime.length > 0 && (
+                        <MovieSection
+                            title="Popular Anime of All Time"
+                            items={popularAnime}
+                            type="anime"
+                            isLarge={false}
+                        />
+                    )}
                     <MovieSection title="Popular TV Series" items={popularTVShows} />
                 </div>
             </div>

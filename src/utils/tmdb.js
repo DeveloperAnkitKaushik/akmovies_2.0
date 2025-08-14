@@ -178,6 +178,8 @@ export const getTVShowDetails = async (tvId) => {
     return await tmdbFetch(`/tv/${tvId}`);
 };
 
+// Get videos for a movie or TV show
+
 // Get movie images (including logos)
 export const getMovieImages = async (movieId) => {
     return await tmdbFetch(`/movie/${movieId}/images`);

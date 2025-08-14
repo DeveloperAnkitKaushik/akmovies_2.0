@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { signInWithGoogle, signOutUser } from '@/utils/auth';
 import { FaUser, FaSignOutAlt, FaSearch, FaTimes } from 'react-icons/fa';
 import { searchMulti } from '@/utils/tmdb';
+import { searchAnime, convertAnimeToMovieCard } from '@/utils/anilist';
 import styles from './index.module.css';
 import { FaArrowRight } from "react-icons/fa";
 
@@ -17,6 +18,7 @@ const Navbar = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [searchType, setSearchType] = useState('movie'); // 'movie' | 'anime'
     const [isSearching, setIsSearching] = useState(false);
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
@@ -48,7 +50,7 @@ const Navbar = () => {
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery]);
+    }, [searchQuery, searchType]);
 
     const performSearch = async (query) => {
         if (!query.trim()) {
@@ -58,8 +60,15 @@ const Navbar = () => {
 
         try {
             setIsSearching(true);
-            const data = await searchMulti(query, 1);
-            setSearchResults(data.results.slice(0, 4)); // Limit to 8 results for popup
+            if (searchType === 'anime') {
+                const pageData = await searchAnime(query, 1, 10);
+                const items = (pageData?.media || []).map(convertAnimeToMovieCard).slice(0, 4);
+                setSearchResults(items);
+            } else {
+                const data = await searchMulti(query, 1);
+                const filtered = (data.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv').slice(0, 4);
+                setSearchResults(filtered);
+            }
         } catch (error) {
             console.error('Search error:', error);
             setSearchResults([]);
@@ -84,7 +93,7 @@ const Navbar = () => {
         e.preventDefault();
         if (searchQuery.trim()) {
             setIsSearchOpen(false);
-            router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            router.push(`/search?type=${searchType === 'anime' ? 'anime' : 'movie'}&q=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
 
@@ -94,9 +103,14 @@ const Navbar = () => {
         setSearchResults([]);
 
         const title = item.title || item.name;
-        const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+        const isAnime = item.media_type === 'anime' || item.mediaType === 'anime';
+        const mediaType = isAnime ? 'anime' : (item.media_type || (item.title ? 'movie' : 'tv'));
         const formattedTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        router.push(`/watch/${mediaType}/${item.id}-${formattedTitle}`);
+        if (isAnime) {
+            router.push(`/anime/${item.id}-${formattedTitle}`);
+        } else {
+            router.push(`/watch/${mediaType}/${item.id}-${formattedTitle}`);
+        }
     };
 
     const handleAuthClick = async () => {
@@ -220,19 +234,38 @@ const Navbar = () => {
                     <div className={styles.searchPopupBackdrop} onClick={toggleSearch}></div>
                     <div className={styles.searchPopupContent}>
                         <form onSubmit={handleSearchSubmit} className={styles.searchForm}>
-                            <div className={styles.searchInputContainer}>
-                                <FaSearch className={styles.searchInputIcon} />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search for movies, TV shows..."
-                                    className={styles.searchInput}
-                                    autoFocus
-                                />
-                                {isSearching && (
-                                    <div className={styles.searchSpinner}></div>
-                                )}
+                            <div className={styles.searchBarRow}>
+                                <div className={styles.searchInputContainer}>
+                                    <FaSearch className={styles.searchInputIcon} />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder={searchType === 'anime' ? 'Search anime...' : 'Search movies, TV shows...'}
+                                        className={styles.searchInput}
+                                        autoFocus
+                                    />
+                                    {isSearching && (
+                                        <div className={styles.searchSpinner}></div>
+                                    )}
+                                </div>
+                                <div className={styles.typeToggle} aria-label="Search type toggle">
+                                    <span className={`${styles.toggleThumb} ${searchType === 'movie' ? styles.left : styles.right}`}></span>
+                                    <button
+                                        type="button"
+                                        className={`${styles.toggleOption} ${searchType === 'movie' ? styles.active : ''}`}
+                                        onClick={() => setSearchType('movie')}
+                                    >
+                                        Movies
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${styles.toggleOption} ${searchType === 'anime' ? styles.active : ''}`}
+                                        onClick={() => setSearchType('anime')}
+                                    >
+                                        Anime
+                                    </button>
+                                </div>
                             </div>
                         </form>
 
@@ -264,13 +297,15 @@ const Navbar = () => {
                                                 >
                                                     <div className={styles.searchResultImage}>
                                                         <img
-                                                            src={item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : '/placeholder-movie.jpg'}
+                                                            src={(item.media_type === 'anime' || item.mediaType === 'anime')
+                                                                ? (item.poster_path || '/placeholder-movie.jpg')
+                                                                : (item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : '/placeholder-movie.jpg')}
                                                             alt={item.title || item.name}
                                                         />
                                                     </div>
                                                     <div className={styles.searchResultInfo}>
                                                         <h3>{item.title || item.name}</h3>
-                                                        <p>{item.media_type || (item.title ? 'movie' : 'tv')}</p>
+                                                        <p>{(item.media_type === 'anime' || item.mediaType === 'anime') ? 'anime' : (item.media_type || (item.title ? 'movie' : 'tv'))}</p>
                                                         {item.release_date && (
                                                             <span>{new Date(item.release_date).getFullYear()}</span>
                                                         )}

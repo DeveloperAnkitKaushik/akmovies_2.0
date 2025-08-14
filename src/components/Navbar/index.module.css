@@ -416,6 +416,13 @@
     animation: slideInFromLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
 }
 
+.searchBarRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+}
+
 .searchInputContainer {
     position: relative;
     display: flex;
@@ -424,6 +431,56 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 0.75rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Type toggle (shared style) */
+.typeToggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+    padding: 6px;
+    gap: 6px;
+    user-select: none;
+}
+
+.toggleOption {
+    position: relative;
+    z-index: 2;
+    color: #cbd5e1;
+    background: transparent;
+    border: 0;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.toggleOption.active {
+    color: #111827;
+}
+
+.toggleThumb {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: calc(50% - 8px);
+    background: linear-gradient(135deg, #e94560 0%, #f195a2 100%);
+    border-radius: 9999px;
+    z-index: 1;
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 25px rgba(233, 69, 96, 0.35);
+}
+
+.left {
+    transform: translateX(0);
+}
+
+.right {
+    transform: translateX(100%);
 }
 
 .searchInputContainer:focus-within {

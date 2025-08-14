@@ -72,29 +72,10 @@ export default function WatchPage() {
     checkBookmarkStatus();
   }, [actualId, type, isAuthenticated, user?.uid]);
 
-  useEffect(() => {
-    // We only want to update progress for logged-in users watching a TV show
-    if (type === 'tv' && isAuthenticated && user?.uid && actualId) {
-      console.log(`Updating progress: S${selectedSeason} E${selectedEpisode}`); // Optional: for debugging
-
-      // Update the progress in Firestore
-      updateContinueWatchingProgress(
-        user.uid,
-        parseInt(actualId),
-        type,
-        selectedSeason,
-        selectedEpisode
-      );
-
-      // We can also save to the general history here if needed
-      if (details) {
-        saveToHistory(details);
-      }
-    }
-  }, [selectedSeason, selectedEpisode, isAuthenticated, user, actualId, type, details]); // The dependency array
+  // Remove automatic history saving - only save on explicit user actions
 
   // Save to continue watching
-  const saveToHistory = async (contentDetails) => {
+  const saveToHistory = async (contentDetails, season = null, episode = null) => {
     if (!isAuthenticated || !user?.uid || !contentDetails) return;
 
     try {
@@ -104,11 +85,13 @@ export default function WatchPage() {
         description: contentDetails.overview,
         posterPath: contentDetails.poster_path,
         mediaType: type,
-        season: type === 'tv' ? selectedSeason : 1,
-        episode: type === 'tv' ? selectedEpisode : 1
+        season: type === 'tv' ? (season || selectedSeason) : 1,
+        episode: type === 'tv' ? (episode || selectedEpisode) : 1
       };
 
+      console.log('Saving to history:', historyItem); // Debug log
       await addToHistory(user.uid, historyItem);
+      console.log('Successfully saved to history'); // Debug log
     } catch (error) {
       console.error('Error saving to history:', error);
     }
@@ -228,6 +211,11 @@ export default function WatchPage() {
 
     setSelectedSeason(newSeason);
     setSelectedEpisode(newEpisode);
+
+    // Save to history when user explicitly navigates
+    if (isAuthenticated && user?.uid && details) {
+      saveToHistory(details, newSeason, newEpisode);
+    }
   };
 
   const goToNextEpisode = async () => {
@@ -250,6 +238,11 @@ export default function WatchPage() {
 
     setSelectedSeason(newSeason);
     setSelectedEpisode(newEpisode);
+
+    // Save to history when user explicitly navigates
+    if (isAuthenticated && user?.uid && details) {
+      saveToHistory(details, newSeason, newEpisode);
+    }
   };
 
   // Check if navigation buttons should be disabled
@@ -324,11 +317,21 @@ export default function WatchPage() {
     setSelectedSeason(seasonNumber);
     setSelectedEpisode(1);
     setShowSeasonDropdown(false);
+
+    // Save to history when user manually changes season
+    if (isAuthenticated && user?.uid && details) {
+      saveToHistory(details, seasonNumber, 1);
+    }
   };
 
   // Handle episode selection
   const handleEpisodeSelect = async (episodeNumber) => {
     setSelectedEpisode(episodeNumber);
+
+    // Save to history when user manually selects episode
+    if (isAuthenticated && user?.uid && details) {
+      saveToHistory(details, selectedSeason, episodeNumber);
+    }
   };
 
   // Handle add to recommendations (admin only)
