@@ -373,4 +373,19 @@
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
     }
+    .searchBarRow{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .searchInputContainer{
+        width: 100%;
+    }
+    .searchInput{
+        width: 100%;
+    }
+    .searchPopupContent{
+        margin-top: 1rem;
+    }
 }

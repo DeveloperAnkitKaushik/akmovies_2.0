@@ -260,7 +260,7 @@
     left: -100%;
     width: 320px;
     height: 100vh;
-    background: rgba(26, 26, 46, 0.92);
+    background: rgba(21, 21, 21, 0.92);
     backdrop-filter: blur(25px);
     display: flex;
     flex-direction: column;
@@ -403,7 +403,7 @@
     z-index: 2001;
     display: flex;
     flex-direction: column;
-    padding: 2rem;
+    padding: 0 2rem;
     max-width: 800px;
     margin: 0 auto;
     animation: slideInFromTop 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
@@ -444,6 +444,7 @@
     padding: 6px;
     gap: 6px;
     user-select: none;
+    
 }
 
 .toggleOption {
@@ -920,6 +921,24 @@
     .mobileMenu {
         width: 100%;
         left: -100%;
+    }
+
+    .searchBarRow {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .searchInputContainer {
+        width: 100%;
+    }
+
+    .searchInput {
+        width: 100%;
+    }
+    .searchPopupContent{
+        margin-top: 1rem;
     }
 }
 
