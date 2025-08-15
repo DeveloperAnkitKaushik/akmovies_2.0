@@ -612,8 +612,7 @@ export default function WatchPage() {
                   height="100%"
                   frameBorder="0"
                   allowFullScreen
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                  sandbox="allow-same-origin allow-scripts allow-forms allow-presentation"
+                  allow="autoplay; fullscreen;"
                   referrerPolicy="no-referrer"
                   onError={() => {
                     toast.error('Failed to load video. Please try another server.');
